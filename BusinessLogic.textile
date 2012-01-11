@@ -1,10 +1,10 @@
-h1. Incorporating business logic 
+h1. Building the business logic 
 
-h2. Learn how to build the business logic of the application
+h2. Learn how we designed and implemented the business layer of the application and how we made it accessible for different types of front-ends
 
 ---
 
-You've just identified the domain model of your application and created its persistence layer. Now you need to implement the services that implement the business logic of your application and expose them to the web tier. Topics covered include:
+You've just identified the domain model of your application and created its persistence layer. Now you need to implement the services that implement the business logic of your application and expose them to the front-end. Topics covered include:
 
 * Implementing basic CRUD operation 
 * Encapsulating business logic in services and integrating with the persistence tier
