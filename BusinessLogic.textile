@@ -1,0 +1,24 @@
+--- 
+title: Incorporating business logic 
+guide_summary: Learn how to build the business logic of the application
+---
+
+You've just identified the domain model of your application and created its persistence layer. Now you need to implement the services that implement the business logic of your application and expose them to the web tier.
+
+
+) Business Logic:
+note: will be consumed by both RichFaces (JSF), Aerogear (jQuery) and Errai (GWT) - must be fully compatible with all 3 of our primary UIs
+- CDI: Kitchensink’s Resources.java for @Inject of entity manager
+- Logging
+- JAX-RS-based services - full CRUD & master-detail
+   - Calls should return proper response codes based on errors
+   - MemberService.java for example
+- Arquillian based tests
+
+
+Deliverables:
+-- written tutorial including screenshots from JBoss Tools
+-- Using JBoss Tools WS Tester for manually testing the JAX-RS endpoints
+-- Using JBoss Tools JAX-RS exploring feature in the Project Explorer
+-- video(s) - under 5 minutes each
+-- the solution projects in quickstart form (not necessarily part of the shipping quickstarts)
