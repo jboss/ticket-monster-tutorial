@@ -14,4 +14,4 @@ This guide shows you how we built the persistence layer for the TicketMonster ap
 
 And of course the guide will take you through the boring business of configuration.
 
-For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
+The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through . For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
