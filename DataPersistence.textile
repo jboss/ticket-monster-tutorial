@@ -4,7 +4,7 @@ h2. Learn how we built the persistence layer for the application, and how we add
 
 ---
 
-This guide shows you how we built the persistence layer for the TicketMonster application. After reading this guide, you'll understand how we built the persistence layer, and grasp why we made certain design choices. Topics covered include:
+You have set up your project successfully. Now it is time to begin working on the TicketMonster application, and the first step is adding its persistence layer. After reading this guide, you'll understand how we did this, and grasp why we made certain design choices. Topics covered include:
 
 * RDBMS design using JPA entity beans
 * Basic unit testing using JUnit

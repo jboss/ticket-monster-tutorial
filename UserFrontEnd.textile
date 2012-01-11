@@ -4,11 +4,11 @@ h2. Learn how we implemented the front-end of the application using HTML5
 
 ---
 
-You've just implemented the business services of your application, and exposed them through RESTful endpoints. Now you need to implement a flexible user interface that can be easily used with both desktop and mobile clients. Topics covered include:
+You've just implemented the business services of your application, and exposed them through RESTful endpoints. Now you need to implement a flexible user interface that can be easily used with both desktop and mobile clients. After reading this tutorial, you will understand our front-end design and the choices that we made in its implementation. Topics covered include:
 
 * Creating single-page applications using HTML5, JavaScript and JSON
 * Using JavaScript frameworks such as jQuery for invoking RESTful endpoints and manipulating page content
 * Detecting the client device
 * Implementing a version of the user interface that is optimized for mobile clients using JavaScript frameworks such as jQuery mobile
 
-The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through . For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
+The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through. For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.

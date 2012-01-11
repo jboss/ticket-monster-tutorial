@@ -4,7 +4,7 @@ h2. Learn how we designed and implemented the business layer of the application 
 
 ---
 
-You've just defined the domain model of your application and created its persistence layer. Now you need to implement the services that implement the business logic of your application and expose them to the front-end. Topics covered include:
+You've just defined the domain model of your application and created its persistence layer. Now you need to implement the services that implement the business logic of your application and expose them to the front-end. After reading this, you'll understand our business layer design and the choices that we made while developing it. Topics covered include:
 
 * Implementing basic persistence operations (?)
 * Encapsulating business logic in services and integrating with the persistence tier
