@@ -1,4 +1,4 @@
-h1. Building the business logic 
+h1. Building the business services 
 
 h2. Learn how we designed and implemented the business layer of the application and how we made it accessible for different types of front-ends
 
