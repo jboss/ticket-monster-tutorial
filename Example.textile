@@ -1,0 +1,9 @@
+---
+title: Getting Started
+guide_summary: Learn how to add Arquillian to the test suite of your project and write your first Arquillian test.
+---
+This guide introduces you to Arquillian. After reading this guide, you’ll be able to:
+Add the Arquillian infrastructure to a Maven-based Java project
+Write an Arquillian test case to assert the behavior of a CDI bean
+Execute the Arquillian test case in multiple compatible containers
+You’ll learn all of these skills by incorporating Arquillian into the test suite of a Java EE application with a Maven build. We’ve designed this guide to be a fast read to get you started quickly!
