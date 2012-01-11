@@ -12,13 +12,6 @@ This guide shows you how we built the persistence layer for the TicketMonster ap
 * How to validate your entities using Bean Validation
 * Basic modification (CRUD) to entities
 
-And of course the tutorial will take you through the boring business of configuration.
+And of course the guide will take you through the boring business of configuration.
 
-------
-
-h1. Notes - remaining to be integrated.
-
-* written tutorial including screenshots from JBoss Tools
-* New Java Project in JBoss Tools
-* video(s) - under 5 minutes each
-* the solution projects in quickstart form (not necessarily part of the shipping quickstarts)
+For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
