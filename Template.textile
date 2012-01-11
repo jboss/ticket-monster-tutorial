@@ -1,7 +1,7 @@
 At the beginning of each guide, we communicate three things:
 
-1. The purpose of the guide
-2. What the reader will learn (specific skills presented in a list)
-3. How the skills will be taught
+# The purpose of the guide
+# What the reader will learn (specific skills presented in a list)
+# How the skills will be taught
 
 We also suggest a title and a summary (so 5 bits of information in total).
