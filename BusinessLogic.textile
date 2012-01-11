@@ -13,5 +13,4 @@ You've just defined the domain model of your application and created its persist
 * Implementing cross-cutting concerns such as logging
 * Exposing RESTful services via JAX-RS
 
-
-
+The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through . For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
