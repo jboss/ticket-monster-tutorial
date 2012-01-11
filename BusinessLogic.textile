@@ -1,4 +1,5 @@
 h1. Incorporating business logic 
+
 h2. Learn how to build the business logic of the application
 
 ---
