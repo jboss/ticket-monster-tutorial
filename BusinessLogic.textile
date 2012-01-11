@@ -1,6 +1,8 @@
 --- 
+
 title: Incorporating business logic 
 guide_summary: Learn how to build the business logic of the application
+
 ---
 
 You've just identified the domain model of your application and created its persistence layer. Now you need to implement the services that implement the business logic of your application and expose them to the web tier.
