@@ -8,4 +8,5 @@ You've just implemented the business services of your application, and exposed t
 
 * Creating single-page applications using HTML5, JavaScript and JSON
 * Using JavaScript frameworks such as jQuery for invoking RESTful endpoints and manipulating page content
-* Detecting the client device and adding a mobile version of the application
+* Detecting the client device
+* Implementing a version of the user interface that is optimized for mobile clients using JavaScript frameworks such as jQuery mobile
