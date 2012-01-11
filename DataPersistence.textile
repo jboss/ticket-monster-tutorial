@@ -1,15 +1,19 @@
-- RDBMS design using JPA entity beans
-- persistence.xml
-- JUnit based tests 
-- Arquillian based tests
-- import.sql
-- bean validation
-- full CRUD must be demonstrated
-- minimum of 4 tables - including two in a 1 to Many relationship
-- master-detail: multi-table transaction demonstrated (shopping cart)
-- limited to pure JPA spec
-Deliverables: 
- -- written tutorial including screenshots from JBoss Tools
- -- New Java Project in JBoss Tools
- -- video(s) - under 5 minutes each
- -- the solution projects in quickstart form (not necessarily part of the shipping quickstarts)
+h1. Topics
+
+* RDBMS design using JPA entity beans
+* persistence.xml
+* JUnit based tests 
+* Arquillian based tests
+* import.sql
+* bean validation
+* full CRUD must be demonstrated
+* minimum of 4 tables - including two in a 1 to Many relationship
+* master-detail: multi-table transaction demonstrated (shopping cart)
+* limited to pure JPA spec
+
+h1. Deliverables
+
+* written tutorial including screenshots from JBoss Tools
+* New Java Project in JBoss Tools
+* video(s) - under 5 minutes each
+* the solution projects in quickstart form (not necessarily part of the shipping quickstarts)
