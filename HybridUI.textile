@@ -1,0 +1,12 @@
+h1. Adding an native look and feel UI for mobile devices
+ 
+h2. Learn how we added a native look and feel UI for mobile devices
+
+---
+
+This guide shows you how we built the native look and feel UI for mobile devices. You'll learn how we added Apache Callaback to the application:
+
+* Contacts from the user will be automatically imported
+* TODO
+
+And of course the tutorial will take you through the boring business of configuration.
