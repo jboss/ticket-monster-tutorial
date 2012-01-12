@@ -6,7 +6,6 @@ h2. Learn how to add a native look and feel UI for mobile devices
 
 You have developed the front-end of your application, and it includes mobile support. It would be great to include some native look and feel UI for mobile devices. After reading this tutorial, you'll understand how to use Apache Callback to add native features to your application. Topics covered include :
 
-* Contacts from the user will be automatically imported
 * TODO
 
 We'll round out the guide by revealing the required, yet short and sweet, configuration.
