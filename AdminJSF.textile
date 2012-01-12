@@ -1,11 +1,14 @@
-h1. Adding an Admin GUI using JSF
+h1. Adding an Admin UI using JSF
  
-h2. Learn how we added an Administration UI to the application using JSF and RichFaces
+h2. Learn how to implement an Administration UI to the application using JSF and RichFaces
 
 ---
 
-You've just defined the domain model of your application, and all the entities managed directly by the end-users. Now it's time to build an administration GUI for the TicketMonster application using JSF and RichFaces. After reading this guide, you'll understand how we used JBoss Forge to create the views from the entities, how we "souped up" the GUI using RichFaces, and how we tested the GUI using Selenium:
+You've just defined the domain model of your application, and all the entities managed directly by the end-users. Now it's time to build an administration GUI for the TicketMonster application using JSF and RichFaces. After reading this guide, you'll understand how to use JBoss Forge to create the views from the entities, how to "soup up" the UI using RichFaces, and how to test the UI using Selenium:
 
 * TODO
 
-And of course the tutorial will take you through the boring business of configuration.
+We'll round out the guide by revealing the required, yet short and sweet, configuration.
+
+The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through. For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
+

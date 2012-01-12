@@ -1,6 +1,6 @@
 h1. Adding an native look and feel UI for mobile devices
  
-h2. Learn how we added a native look and feel UI for mobile devices
+h2. Learn how to add a native look and feel UI for mobile devices
 
 ---
 
@@ -9,4 +9,7 @@ You have developed the front-end of your application, and it includes mobile sup
 * Contacts from the user will be automatically imported
 * TODO
 
-And of course the tutorial will take you through the boring business of configuration.
+We'll round out the guide by revealing the required, yet short and sweet, configuration.
+
+The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through. For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
+

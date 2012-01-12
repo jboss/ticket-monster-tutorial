@@ -1,6 +1,6 @@
 h1. Building the User UI using HTML5
 
-h2. Learn how we implemented the front-end of the application using HTML5 
+h2. Learn how to implement the front-end of the application using HTML5, suitable for Mobile use
 
 ---
 
