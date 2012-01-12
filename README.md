@@ -6,7 +6,7 @@ This is a series of tutorials that will walk you through the process of creating
 
 After reading this series you will understand how to:
 
-* set up your project;
+* [set up your project](/Intro.textile);
 * define the persistence layer of the application;
 * design and implement the business layer and expose it to the front-end via RESTful endpoints;
 * implement a mobile-ready front-end using HTML 5, JSON and JavaScript;
