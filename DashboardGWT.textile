@@ -1,0 +1,13 @@
+h1. Building a statistics dashboard using GWT and ...
+
+h2. Learn how to implement an event-driven data collection dashboard using GWT and CDI client-server eventing
+
+---
+
+You've just an administration view, and would like to collect real-time information about ticket sales and attendance. Now it would be good to implement a dashboard that can collect data and receive real-time updates. After reading this tutorial, you will understand our dashboard design and the choices that we made in its implementation. Topics covered include:
+
+* Adding GWT to your application
+* Setting up CDI server-client eventing using 
+* Testing GWT applications 
+
+The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through. For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
