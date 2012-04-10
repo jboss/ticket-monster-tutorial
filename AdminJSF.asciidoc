@@ -74,7 +74,7 @@ Generating the CRUD UI
 *************************************************************************************
 Forge supports the execution of scripts. The generation of the CRUD UI is provided
 as a Forge script in TicketMonster, so you don't need to type the commands everytime
-you want to regenerate the Admin UI. To run the script:
+you want to regenerate the Admin UI. The script will also prompt you to applyTo run the script:
 
     run admin_layer.fsh
 *************************************************************************************
@@ -165,7 +165,7 @@ The `image` composite component encapsulates the rendering of the image, pulling
 
 Adding this file to `/src/main/webapp/resources/tm/` automatically registers the component with JSF, using the namespace `xmlns:tm="http://java.sun.com/jsf/composite/tm`.
 
-Let's go ahead and use this component to display the image in `src/main/webapp/admin/event/view.xhtml` - the page an admin uses to view an event before editing it. Open up the file in JBoss Developer Studio (or your favourite IDE or text editor). Forge has generated an entry in panel grid to display the image URL, so we can just replace the `<h:outputText id="eventBeanEventPicture" value="#{eventBean.event.picture}" />` with `<tm:image media="#{mediaManager.getPath(eventBean.event.picture)}" />`. We need to register the namespace as well, so add `xmlns:tm="http://java.sun.com/jsf/composite/tm"` to the `<ui:composition>` tag. You should end up with a file that looks a bit like:
+Let's go ahead and use this component to display the image in `src/main/webapp/admin/event/view.xhtml` - the page an admin uses to view an event before editing it. Open up the file in JBoss Developer Studio (or your favourite IDE or text editor). Forge has generated an entry in panel grid to display the image URL, so we can just add `<tm:image media="#{mediaManager.getPath(eventBean.event.picture)}" />` to the `<h:link>` with the id `eventBeanEventPicture`. We need to register the namespace as well, so add `xmlns:tm="http://java.sun.com/jsf/composite/tm"` to the `<ui:composition>` tag. You should end up with a file that looks a bit like:
 
 ./src/main/webapp/admin/event/view.xhtml
 [source,html]
@@ -204,8 +204,13 @@ Let's go ahead and use this component to display the image in `src/main/webapp/a
                 value="#{eventBean.event.name}" />
             <h:outputText />
             <h:outputLabel for="eventBeanEventPicture" value="Picture:" />
-            <tm:image
-                media="#{mediaManager.getPath(eventBean.event.picture)}" />
+            <h:link id="eventBeanEventPicture"
+                outcome="/admin/mediaItem/view"
+                value="#{eventBean.event.picture}">
+                <tm:image
+                    media="#{mediaManager.getPath(eventBean.event.picture)}" />
+                <f:param name="id" value="#{eventBean.event.picture.id}" />
+            </h:link>
             <h:outputText />
             <h:outputLabel for="eventBeanEventCategory"
                 value="Category:" />
@@ -214,6 +219,7 @@ Let's go ahead and use this component to display the image in `src/main/webapp/a
                 value="#{eventBean.event.category}">
                 <f:param name="id"
                     value="#{eventBean.event.category.id}" />
+
             </h:link>
             <h:outputText />
             <h:outputLabel for="eventBeanEventDescription"
