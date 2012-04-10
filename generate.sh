@@ -28,10 +28,10 @@ mkdir -p $TARGET
 echo "**** Copying shared resources to $TARGET"
 cp -r gfx $TARGET
 
-files=`find * -iname *.txt`
+files=`find * -iname *.asciidoc`
 for file in $files
 do
-    output_filename=$TARGET/${file//.txt/.html}
+    output_filename=$TARGET/${file//.asciidoc/.html}
     echo "**** Processing $file > ${output_filename}"
     asciidoc -b xhtml11 -a pygments -o ${output_filename} $file  
 done
