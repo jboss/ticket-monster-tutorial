@@ -28,7 +28,7 @@ mkdir -p $TARGET
 echo "**** Copying shared resources to $TARGET"
 cp -r gfx $TARGET
 
-files=`find * -iname *.asciidoc`
+files=`find * -iname \*.asciidoc`
 for file in $files
 do
     output_filename=$TARGET/${file//.asciidoc/.html}

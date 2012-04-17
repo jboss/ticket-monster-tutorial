@@ -20,9 +20,10 @@ In this tutorial, you will build a single-page application. All the necessary co
 
 [[single-page-app_image]]
 .Single page application
-image::gfx/forge-project-list-facets.png[]
+image::gfx/single-page-app.png[]
 
 You will use jQuery to simplify DOM manipulation. Because this is a moderately complex example, which involves multiple views and different types of data, you will use a client-side MVC framework to structure your application, which provides amongst others:
+
 * routing support within your single page application;
 * event-driven interaction between views and data;
 * simplified CRUD invocations on RESTful services.
@@ -43,4 +44,4 @@ Models hold data, handle data change events and can perform CRUD operations with
 
 Views are responsible for rendering the UI by manipulating the DOM, handling user interaction events like selection changes or button clicks.
 
-The router executes actions in response to a hashchange. quivalent to the user 'navigating' to a different page inside the applca
+The router executes actions in response to a hashchange(equivalent to the user 'navigating' to a different page inside the application).
