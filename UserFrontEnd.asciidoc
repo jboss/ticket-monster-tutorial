@@ -36,7 +36,7 @@ Both the desktop and mobile variant of the application use backbone.js to struct
 
 [[use-of-backbone_image]]
 .Backbone interaction in Ticket Monster
-image::gfx/backbone-in-ticket-monster.png[]
+image::gfx/backbone-usage.png[]
 
 Ticket Monster defines a number of Backbone components. 
 
