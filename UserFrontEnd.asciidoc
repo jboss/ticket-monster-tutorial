@@ -44,4 +44,51 @@ Models hold data, handle data change events and can perform CRUD operations with
 
 Views are responsible for rendering the UI by manipulating the DOM, handling user interaction events like selection changes or button clicks.
 
-The router executes actions in response to a hashchange(equivalent to the user 'navigating' to a different page inside the application).
+The router executes actions in response to a hashchange(equivalent to the user navigating to a different page inside the application).
+
+Creating the desktop page
+-------------------------
+
+TBD: Create HTML, add JavaScript dependencies and CSS. 
+
+Isolating our own code
+----------------------
+
+You want to make sure that your code doesn't clash with other Javascript libraries. You need to declare a 'namespace'.
+
+.src/main/webapp/desktop-index.html
+[source,html]
+-------------------------------------------------------------------------------------------------------
+
+var TicketMonster = new Object();
+
+------------------------------------------------------------------------------------------------------- 
+
+Viewing the events
+------------------
+
+You will begin implementing the view by adding the model for the Event entity and its associated collection.
+
+.src/main/webapp/desktop-index.html
+[source,html]
+-------------------------------------------------------------------------------------------------------
+
+TicketMonster.Event = Backbone.Model.extend({
+    urlRoot:'rest/events'
+})
+
+TicketMonster.Events = Backbone.Collection.extend({
+    url:"rest/events",
+    model:TicketMonster.Event,
+    id:"id",
+    comparator:function (model) {
+        return model.get('category').id;
+    }
+});
+
+-------------------------------------------------------------------------------------------------------
+
+The `urlRoot` property of `TicketMonster.Event` maps the CRUD operations of the entity to the REST service layer. Same goes for the `url` property of `TicketMonster.Events`. We have also indicated which is the identifier property of the Event model, and that the Events collection must sort its members by id internally.
+
+By mapping the model and collection to a REST endpoint you can perform CRUD operations without having to invoke the services explicitly. You will see how that works a bit later.
+
