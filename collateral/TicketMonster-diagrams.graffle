@@ -913,8 +913,8 @@ Layout}</string>
 					<integer>51</integer>
 					<key>Points</key>
 					<array>
-						<string>{150.50003, 416.34308}</string>
-						<string>{236.74619, 434.27777}</string>
+						<string>{150.50003, 416.34305}</string>
+						<string>{236.74623, 434.27771}</string>
 					</array>
 					<key>Style</key>
 					<dict>
@@ -1480,8 +1480,8 @@ Shows}</string>
 					<integer>28</integer>
 					<key>Points</key>
 					<array>
-						<string>{274.30475, 176.50801}</string>
-						<string>{272.69528, 139.48882}</string>
+						<string>{274.30475, 176.508}</string>
+						<string>{272.69528, 139.48883}</string>
 					</array>
 					<key>Style</key>
 					<dict>
@@ -1505,7 +1505,7 @@ Shows}</string>
 				</dict>
 				<dict>
 					<key>Bounds</key>
-					<string>{{350.5, 242}, {50, 14}}</string>
+					<string>{{350.5, 242.00002}, {50, 14}}</string>
 					<key>Class</key>
 					<string>ShapedGraphic</string>
 					<key>FitText</key>
@@ -1569,8 +1569,8 @@ Shows}</string>
 					<integer>14</integer>
 					<key>Points</key>
 					<array>
-						<string>{314.14157, 221.38872}</string>
-						<string>{436.85843, 276.6113}</string>
+						<string>{314.14154, 221.3887}</string>
+						<string>{436.85846, 276.61133}</string>
 					</array>
 					<key>Style</key>
 					<dict>
@@ -1628,8 +1628,8 @@ Shows}</string>
 					<integer>25</integer>
 					<key>Points</key>
 					<array>
-						<string>{110, 80.184837}</string>
-						<string>{245.9334, 181.8804}</string>
+						<string>{110, 80.18483}</string>
+						<string>{245.93338, 181.88039}</string>
 					</array>
 					<key>Style</key>
 					<dict>
@@ -3477,7 +3477,7 @@ Shows}</string>
 	<key>WindowInfo</key>
 	<dict>
 		<key>CurrentSheet</key>
-		<integer>2</integer>
+		<integer>1</integer>
 		<key>ExpandedCanvases</key>
 		<array>
 			<dict>
@@ -3485,6 +3485,8 @@ Shows}</string>
 				<string>Canvas 1</string>
 			</dict>
 		</array>
+		<key>Frame</key>
+		<string>{{285, 4}, {710, 774}}</string>
 		<key>ListView</key>
 		<true/>
 		<key>OutlineWidth</key>
@@ -3497,6 +3499,8 @@ Shows}</string>
 		<true/>
 		<key>SidebarWidth</key>
 		<integer>120</integer>
+		<key>VisibleRegion</key>
+		<string>{{0, 0}, {575, 619}}</string>
 		<key>Zoom</key>
 		<real>1</real>
 		<key>ZoomValues</key>
