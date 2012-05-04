@@ -1,0 +1,312 @@
+Building The Persistence Layer
+==============================
+
+Learn how to build the persistence layer for an application, and how to test it
+-------------------------------------------------------------------------------
+
+You have set up your project successfully. Now it is time to begin working on the TicketMonster application, and the first step is adding the persistence layer. After reading this guide, you'll understand what design and implementation choices to make. Topics covered include:
+
+* RDBMS design using JPA entity beans
+* Basic unit testing using JUnit
+* How to populate some test data
+* How to validate your entities using Bean Validation
+* Basic modification (CRUD) to entities
+
+We'll round out the guide by revealing the required, yet short and sweet, configuration.
+
+The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through. For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
+
+TicketMonster contains 14 entities, of varying complexity. In this tutorial we'll classify the entities, and walk through desiging and creating one of each group.
+
+
+Your first entity
+-----------------
+
+The simplest kind of entities are often those representing lookup tables. `TicketCategory` is a classic lookup table that defines the ticket types available (e.g. Adult, Child, Pensioner). A ticket category has one property - _description_.
+
+.What's in a name?
+*************************************************************************************
+Using a consistent naming scheme for your entities can help another developer get up
+to speed with your code base. We've named all our lookup tables XXXCategory to allow
+us to easily spot them.
+*************************************************************************************
+
+
+Let's start by creating a JavaBean to represent the ticket category:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/TicketCategory.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+public class TicketCategory {
+
+    /* Declaration of fields */
+
+    /**
+     * <p>
+     * The description of the of ticket category.
+     * </p>
+     * 
+     */
+    private String description;
+
+    /* Boilerplate getters and setters */
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    @Override
+    public String toString() {
+        return description;
+    }
+}
+-------------------------------------------------------------------------------------------------------
+
+We're going to want to keep the ticket category in collections (for example, to present it as part of drop down in the UI), so it's important that we properly implement `equals()` and `hashCode()`.  At this point, we need to define a property (or group of properties) that uniquely identifies the ticket category. We refer to these properties as the "entities natural identity".
+
+.Defining an entities natural identity
+*************************************************************************************
+Using an ORM introduces additional constraints on object identity. Defining the 
+properties that make up an entities natural identity can be tricky, but is very 
+important. Using the object identity, or the synthetic identity (database generated 
+primary key) identity can introduce unexpected bugs into your application, so you 
+should always ensure you use a natural identity. You can read more about the issue at
+link: https://community.jboss.org/wiki/EqualsAndHashCode.
+*************************************************************************************
+
+For ticket category, the choice of natural identity is easy and obvious - it must be the one property, _description_ that the entity has! Having identified the natural identity, adding an `equals()` and `hashCode()` method is easy. In Eclipse, choose _Source -> Generate hashCode() and equals()..._
+
+[[eclipse-generate-hashcode-equals]]
+.Generate hashCode() and equals() in Eclipse
+image::gfx/eclipse-generate-hashcode-equals.png[]
+
+Now, select the properties to include:
+
+[[eclipse-generate-hashcode-equals-2]]
+.Generate hashCode() and equals() in Eclipse
+image::gfx/eclipse-generate-hashcode-equals-2.png[]
+
+Now that we have a JavaBean, let's proceed to make it an entity. First, add the `@Entity` annotation to the class:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/TicketCategory.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+@Entity
+public class TicketCategory {
+
+   ...
+
+}
+-------------------------------------------------------------------------------------------------------
+
+And, add the synthetic id:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/TicketCategory.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+@Entity
+public class TicketCategory {
+
+    /* Declaration of fields */
+
+    /**
+     * The synthetic id of the object.
+     */
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Long id;
+
+    ...
+
+    /* Boilerplate getters and setters */
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    ...
+    
+}
+-------------------------------------------------------------------------------------------------------
+
+As we decided that our natural identifier was the description, we should introduce a unique constraint on the property:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/TicketCategory.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+@Entity
+public class TicketCategory {
+
+    /* Declaration of fields */
+
+    ...
+
+    /**
+     * <p>
+     * The description of the of ticket category.
+     * </p>
+     * 
+     * <p>
+     * The description forms the natural id of the ticket category, and so must be unique.
+     * </p>
+     * 
+     */
+    @Column(unique = true)
+    private String description;    
+
+    ...
+}
+-------------------------------------------------------------------------------------------------------
+
+It's very important that any data you place in the database is of the highest quality - this data is probably one of your organisations most valuable assets! To ensure that bad data doesn't get saved to the database by mistake, we'll use Bean Validation to enforce constraints on our properties.
+
+.What is Bean Validation?
+*************************************************************************************
+Bean Validation is a Java specification which:
+
+* provides a unified way of declaring and defining constraints on an object model.
+* defines a runtime engine to validate objects
+
+Bean Validation includes integration with other Java EE specifications, such as JPA.
+Bean Validation constrains are automatically applied before data is persisted to the
+database, as a last line of defence against bad data.
+*************************************************************************************
+
+The _description_ of the ticket category should not be empty for two reasons. Firstly, an empty ticket category description is no use to a person trying to book a ticket - it doesn't convey any information. Secondly, as the description forms the natural identity, we need to make sure the property is always populated.
+
+Let's add the Bean Validation constrain `@NotEmpty`:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/TicketCategory.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+@Entity
+public class TicketCategory {
+
+    /* Declaration of fields */
+
+    ...
+
+    /**
+     * <p>
+     * The description of the of ticket category.
+     * </p>
+     * 
+     * <p>
+     * The description forms the natural id of the ticket category, and so must be unique.
+     * </p>
+     * 
+     * <p>
+     * The description must not be null and must be one or more characters, the Bean Validation constrain <code>@NotEmpty</code>
+     * enforces this.
+     * </p>
+     * 
+     */
+    @Column(unique = true)
+    @NotEmpty
+    private String description;
+
+    ...
+}
+-------------------------------------------------------------------------------------------------------
+
+And that is our first entity! Here is the complete entity:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/TicketCategory.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+/**
+ * <p>
+ * A lookup table containing the various ticket categories. E.g. Adult, Child, Pensioner, etc.
+ * </p>
+ * 
+ * @author Shane Bryzak
+ * @author Pete Muir
+ */
+@Entity
+public class TicketCategory {
+
+    /* Declaration of fields */
+
+    /**
+     * The synthetic id of the object.
+     */
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Long id;
+
+    /**
+     * <p>
+     * The description of the of ticket category.
+     * </p>
+     * 
+     * <p>
+     * The description forms the natural id of the ticket category, and so must be unique.
+     * </p>
+     * 
+     * <p>
+     * The description must not be null and must be one or more characters, the Bean Validation constrain <code>@NotEmpty</code>
+     * enforces this.
+     * </p>
+     * 
+     */
+    @Column(unique = true)
+    @NotEmpty
+    private String description;
+
+    /* Boilerplate getters and setters */
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    /* toString(), equals() and hashCode() for TicketCategory, using the natural identity of the object */
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        TicketCategory that = (TicketCategory) o;
+
+        if (description != null ? !description.equals(that.description) : that.description != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return description != null ? description.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return description;
+    }
+}
+-------------------------------------------------------------------------------------------------------
+
+
+TicketMonster contains another lookup tables, `EventCategory`. It's pretty much identical to `TicketCateory`, so we leave it as an exercise to the reader to investigate, and understand. If you are building the application whilst following this tutorial, copy the source over from the TicketMonster example.
