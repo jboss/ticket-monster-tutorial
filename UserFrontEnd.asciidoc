@@ -57,7 +57,7 @@ Isolating our own code
 You want to make sure that your code doesn't clash with other Javascript libraries. You need to declare a 'namespace'.
 
 .src/main/webapp/desktop-index.html
-[source,html]
+[source,js]
 -------------------------------------------------------------------------------------------------------
 var TicketMonster = new Object();
 ------------------------------------------------------------------------------------------------------- 
@@ -68,7 +68,7 @@ Viewing the events
 You will begin implementing the view by adding the model for the Event entity and its associated collection.
 
 .src/main/webapp/desktop-index.html
-[source,html]
+[source,js]
 -------------------------------------------------------------------------------------------------------
 
 TicketMonster.Event = Backbone.Model.extend({
@@ -93,8 +93,8 @@ By mapping the model and collection to a REST endpoint you can perform CRUD oper
 Next, you will implement the view that displays the events. 
 
 .src/main/webapp/desktop-index.html
-[source,html]
--------------------------------------------------------------------------------------------------------
+[source,js]
+----------------------------------------------------------------------------------------------------
 TicketMonster.EventsCategoriesView = Backbone.View.extend({
     render:function () {
         applyTemplate($(this.el), $('#main-view'), {})
@@ -112,7 +112,6 @@ Each view is assigned to a DOM element (`el` property). The `render` method will
 First, you will create the template.
 
 .src/main/webapp/resources/templates/templates.html
-[source,html]
 -------------------------------------------------------------------------------------------------------
 <script id="main-view" type="text/template">
     <div class="row-fluid">
@@ -127,7 +126,7 @@ First, you will create the template.
 Now, add the template rendering code to the javascript utility file:
 
 .src/main/webapp/resources/js/tm
-[source,javascript]
+[source,js]
 -------------------------------------------------------------------------------------------------------
 function renderTemplate(template, data) {
     return _.template(template.html(), (data == undefined) ? {} : data);
@@ -141,7 +140,7 @@ function applyTemplate(target, template, data) {
 The `EventsCategoriesView` is a composite view. It contains two sub-views. This allows to better encapsulate view-specific behaviour and create reusable components. We will create two sub-views: `EventSummaryView` and `EventMenuView`, to display the two components of the screen. In the `render` function of `EventsCategoryView` we are attaching them to corresponding `div` elements.
  
 .src/main/webapp/desktop-index.html
-[source,html]
+[source,js]
 -------------------------------------------------------------------------------------------------------
 
 TicketMonster.EventMenuView = Backbone.View.extend({
@@ -202,12 +201,11 @@ TicketMonster.EventSummaryLineView = Backbone.View.extend({
 
 -------------------------------------------------------------------------------------------------------
 
-`EventMenuView` is a composite view by itself. Its model is a collection of `Event`s, and it has one `EventSummaryLineView` subview for each `Event` in the associated collection. This allows the subviews to handle events in the context of their associated model elements.
+`EventMenuView` is a composite view by itself. Its model is a collection of `Event` objects, and it has one `EventSummaryLineView` subview for each `Event` in the associated collection. This allows the subviews to handle events in the context of their associated model elements.
 
 You will also need add the templates associated with each view:
 
 .src/main/webapp/resources/templates/templates.html
-[source,html]
 -------------------------------------------------------------------------------------------------------
 <script id="category-title" type="text/template">
     <div class="accordion-group">
@@ -259,7 +257,7 @@ You will also need add the templates associated with each view:
 Now that the views are in place, you will need to add a routing rule to the application. We will create a router and add our first routes.
 
 .src/main/webapp/desktop-index.html
-[source,html]
+[source,js]
 -------------------------------------------------------------------------------------------------------
 
 TicketMonster.Router = Backbone.Router.extend({
@@ -298,7 +296,7 @@ Remember, this is a single page application. You will be able to navigate using 
 `eventDetails` handles the `#events/:id` URL and will retrieve an individual event, rendering the event detail page, whose structure is shown below. The URL can either be invoked directly by copying it in the URL bar of the browser, or will be navigated from the events menu (see the anchor element which we use for rendering  `EventSummaryLineView`).
 
 .src/main/webapp/desktop-index.html
-[source,html]
+[source,js]
 -------------------------------------------------------------------------------------------------------
 
 TicketMonster.EventDetailView = Backbone.View.extend({
@@ -392,7 +390,6 @@ chooses a show date, the show times will be refreshed as well.
 The associated template of the `EventDetailView` is shown here:
 
 .src/main/webapp/resources/templates/templates.html
-[source,html]
 -------------------------------------------------------------------------------------------------------
 <script id="event-detail" type="text/template">
     <div class="row-fluid">
@@ -429,7 +426,7 @@ The associated template of the `EventDetailView` is shown here:
 In response to clicking on the `bookButton` button, the user will navigate to the next view. Again, we have to add a route in our router. 
 
 .src/main/webapp/desktop-index.html
-[source,html]
+[source,js]
 -------------------------------------------------------------------------------------------------------
 
 TicketMonster.Router = Backbone.Router.extend({
@@ -449,7 +446,7 @@ TicketMonster.Router = Backbone.Router.extend({
 The handler function will simply render the 'CreateBookingView' page and initialize its model with an empty booking request.
 
 .src/main/webapp/desktop-index.html
-[source,html]
+[source,js]
 -------------------------------------------------------------------------------------------------------
 
 TicketMonster.Router = Backbone.Router.extend({
@@ -469,7 +466,7 @@ TicketMonster.Router = Backbone.Router.extend({
 Next you will need to create `CreateBookingView` and its subviews:
 
 .src/main/webapp/desktop-index.html
-[source,html]
+[source,js]
 -------------------------------------------------------------------------------------------------------
 
 TicketMonster.CreateBookingView = Backbone.View.extend({
