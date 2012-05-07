@@ -40,27 +40,78 @@ image::gfx/backbone-usage.png[]
 
 Ticket Monster defines a number of Backbone components. 
 
-Models hold data, handle data change events and can perform CRUD operations with the REST service. For example nearly each domain entity is represented in the UI by a corresponding Backbone model. Collections are implementing for handling groups of models.
+Models hold data, handle data change events and can perform CRUD operations with the REST service. For example nearly each domain entity (booking, event, venue) is represented by a corresponding Backbone model. When handling groups of entities (or models), you will use Backbone collections.
 
-Views are responsible for rendering the UI by manipulating the DOM, handling user interaction events like selection changes or button clicks.
+Views are responsible for rendering the UI by manipulating the DOM, and handling user interaction events like selection changes or button clicks.
 
-The router executes actions in response to a hashchange(equivalent to the user navigating to a different page inside the application).
+The router executes actions in response to a hashchange (equivalent to the user navigating to a different page inside the application). One of the benefits of using hash-based URL patterns is that the URLs used for accessing views inside the application can be bookmarked and passed across.
 
 Creating the desktop page
--------------------------
+-------------------
 
-TBD: Create HTML, add JavaScript dependencies and CSS. Explain the ajax call at the front of the page (retrieves the templates) 
+The main page of the application will contain little to no content. It loads the custom stylesheet of the application, as well as the one required by Twitter Bootstrap, which is used for scaffolding the UI, as well as for a few components used in the application (like the carousel in the events or venues page).
 
-Isolating our own code
-----------------------
-
-You want to make sure that your code doesn't clash with other Javascript libraries. You need to declare a 'namespace'.
+As you see, there is not too much functionality, however. this is left to another layer of the application.
 
 .src/main/webapp/desktop-index.html
-[source,js]
+[source,html]
 -------------------------------------------------------------------------------------------------------
-var TicketMonster = new Object();
-------------------------------------------------------------------------------------------------------- 
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ticket Monster</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0;">
+
+    <link type="text/css" rel="stylesheet" href="resources/css/screen.css"/>
+    <link rel="stylesheet" href="resources/bootstrap/css/bootstrap.css" type="text/css" media="all"/>
+    <script data-main="resources/js/main-desktop" src="resources/js/libs/require.js"></script>
+    
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    
+</head>
+<body>
+
+
+<div id="container">
+    <div id="menu">
+        <div class="navbar">
+            <div class="navbar-inner">
+                <div class="container">
+                    <a class="brand">JBoss Ticket Monster</a>
+                    <ul class="nav">
+                        <li><a data-tm-role="top-menu-item" href="#events">Events</a></li>
+                        <li><a data-tm-role="top-menu-item" href="#venues">Venues</a></li>
+                        <li><a data-tm-role="top-menu-item" href="#bookings">Bookings</a></li>
+                        <li><a data-tm-role="top-menu-item" href="#about">About</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="content" class="container-fluid">
+    </div>
+</div>
+
+
+<footer style="">
+    <div style="text-align: center;"><img src="resources/gfx/logo.png" alt="HTML5"/></div>
+</footer>
+
+</body>
+</html>
+-------------------------------------------------------------------------------------------------------
+
+AMD in TicketMonster
+----------------------
+
+The JavaScript code for your application is organized in modules, which allows a cleaner separation between 
+code and the UI design.
+
 
 Viewing the events
 ------------------
