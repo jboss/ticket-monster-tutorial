@@ -10,7 +10,6 @@ You have set up your project successfully. Now it is time to begin working on th
 * Basic unit testing using JUnit
 * How to populate some test data
 * How to validate your entities using Bean Validation
-* Basic modification (CRUD) to entities
 
 We'll round out the guide by revealing the required, yet short and sweet, configuration.
 
@@ -18,7 +17,12 @@ The tutorial will show you how to perform all these steps in JBoss Developer Stu
 
 TicketMonster contains 14 entities, of varying complexity. In this tutorial we'll classify the entities, and walk through desiging and creating one of each group.
 
+Database Schema
+---------------
 
+TODO
+
+[[YourFirstEntity]]
 Your first entity
 -----------------
 
@@ -310,3 +314,1209 @@ public class TicketCategory {
 
 
 TicketMonster contains another lookup tables, `EventCategory`. It's pretty much identical to `TicketCateory`, so we leave it as an exercise to the reader to investigate, and understand. If you are building the application whilst following this tutorial, copy the source over from the TicketMonster example.
+
+Database Design & Relationships
+-------------------------------
+
+First, let's understand the the entity design. 
+
+An `Event` may occur at any number of venues, on various days and at various times. The intersection between an event and a venue is a `Show`, and each show can have a `Performance` which is associated with a date and time.
+
+Venues are a separate grouping of entities, which, as mentioned, intersect with events via shows. Each venue consists of groupings of seats, each known as a `Section`.
+
+Every section, in every show is associated with a ticket category via the `TicketPriceCategory` entity.
+
+Users must be able to book tickets for performances. A `Booking` is associated with a performance, and contains a collection of tickets.
+
+Finally, both events and venues can have "media items", such as images or videos attached.
+
+[[database-design]]
+.Entity-Relationship Diagram
+image::gfx/database-design.png[]
+
+Media Items
+~~~~~~~~~~~
+
+Storing large binary objects, such as images or videos in the database isn't advisable (as it can lead to performance issues), and playback of videos can also be tricky, as it depends on browser capabilities. For TicketMonster, we decided to make use of existing services to host images and videos, such as YouTube or Flickr. All we store in the database is the URL the application should use to access the media item, and the type of the media item (note that the URL forms a media items natural identifier). We need to know the type of the media item in order to render the media correctly in the view layer.
+
+In order for a view layer to correctly render the media item (e.g. display an image, embed a media player), it's likely that special code has had to have been added. For this reason we represents the types of media that TicketMonster understands as a closed set, unmodifiable at runtime. An enum is perfect for this!
+
+Luckily, JPA has native support for enums, all we need to do is add the `@Enumerated` annotation:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/MediaItem.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+
+    ...
+
+    /**
+     * <p>
+     * The type of the media, required to render the media item corectly.
+     * </p>
+     * 
+     * <p>
+     * The media type is a <em>closed set</em> - as each different type of media requires support coded into the view layers, it
+     * cannot be expanded upon without rebuilding the application. It is therefore represented by an enumeration. We instruct
+     * JPA to store the enum value using it's String representation, so that we can later reorder the enum members, without
+     * changing the data. Of course, this does mean we can't change the names of media items once the app is put into
+     * production.
+     * </p>
+     */
+    @Enumerated(STRING)
+    private MediaType mediaType;
+
+    ...
+-------------------------------------------------------------------------------------------------------
+
+.@Enumerated(STRING) or @Enumerated(ORDINAL)?
+*************************************************************************************
+JPA can store an enum value using it's ordinal (position in the list of declared enums)
+or it's STRING (the name it is given). If you choose to store an ordinal, you musn't alter
+the order of the list. If you choose to store the name, you musn't change the enum name.
+The choice is yours!
+*************************************************************************************
+
+The rest of `MediaItem` shouldn't present a challenge to you. If you are building the application whilst following this tutorial, copy both `MediaItem` and `MediaType` from the TicketMonster project.
+
+Events
+~~~~~~
+
+In <<YourFirstEntity>> we saw how to build simple entites with properties, identify and apply constraints using Bean Validation, identify the natural id and add a synthetic id. From now on we'll assume you know how to build simple entities - for each new entity that we build, we will start with it's basic structure and properties filled in.
+
+So, here is our starting point for Event:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Event.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+
+@Entity
+public class Event {
+
+    /* Declaration of fields */
+
+    /**
+     * The synthetic ID of the object.
+     */
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Long id;
+
+    /**
+     * <p>
+     * The name of the event.
+     * </p>
+     * 
+     * <p>
+     * The name of the event forms it's natural identity and cannot be shared between events.
+     * </p>
+     * 
+     * <p>
+     * Two constraints are applied using Bean Validation
+     * </p>
+     * 
+     * <ol>
+     * <li><code>@NotNull</code> &mdash; the name must not be null.</li>
+     * <li><code>@Size</code> &mdash; the name must be at least 5 characters and no more than 50 characters. This allows for
+     * better formatting consistency in the view layer.</li>
+     * </ol>
+     */
+    @Column(unique = true)
+    @NotNull
+    @Size(min = 5, max = 50, message = "An event's name must contain between 5 and 50 characters")
+    private String name;
+
+    /**
+     * <p>
+     * A description of the event.
+     * </p>
+     * 
+     * <p>
+     * Two constraints are applied using Bean Validation
+     * </p>
+     * 
+     * <ol>
+     * <li><code>@NotNull</code> &mdash; the description must not be null.</li>
+     * <li><code>@Size</code> &mdash; the name must be at least 20 characters and no more than 1000 characters. This allows for
+     * better formatting consistency in the view layer, and also ensures that event organisers provide at least some description
+     * - a classic example of a business constraint.</li>
+     * </ol>
+     */
+    @NotNull
+    @Size(min = 20, max = 1000, message = "An event's name must contain between 20 and 1000 characters")
+    private String description;
+
+    
+    /* Boilerplate getters and setters */
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    /* toString(), equals() and hashCode() for Event, using the natural identity of the object */
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        Event event = (Event) o;
+
+        if (name != null ? !name.equals(event.name) : event.name != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return name != null ? name.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+}
+-------------------------------------------------------------------------------------------------------
+
+First, let's add a media item to `Event`. As multiple events (or venues) could share the same media item, we'll model the relationship as _many-to-one_ - many events can reference the same media item.
+
+.Relationships supported by JPA
+*************************************************************************************
+JPA can model four types of relationship between entities - one-to-one, one-to-many,
+many-to-one and many-to-many. A relationship may be bi-directional (both sides of the
+relationship know about each other) or uni-directional (only one side knows about the
+relationship). 
+
+Many database models are hierarchical (parent-child), as is TicketMonster's. As a result, 
+you'll probably find you mostly use one-to-many and many-to-one relationships, which
+allow building parent-child models.
+*************************************************************************************
+
+Creating a many-to-one relationship is very easy in JPA. Just add the `@ManyToOne` annotation to the field. JPA will take care of the rest. Here's the property for `Event`:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Event.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+
+    ...
+
+    /**
+     * <p>
+     * A media item, such as an image, which can be used to entice a browser to book a ticket.
+     * </p>
+     * 
+     * <p>
+     * Media items can be shared between events, so this is modeled as a <code>@ManyToOne</code> relationship.
+     * </p>
+     * 
+     * <p>
+     * Adding a media item is optional, and the view layer will adapt if none is provided.
+     * </p>
+     * 
+     */
+    @ManyToOne
+    private MediaItem mediaItem;
+
+    ...
+
+    public MediaItem getMediaItem() {
+        return mediaItem;
+    }
+
+    public void setMediaItem(MediaItem picture) {
+        this.mediaItem = picture;
+    }
+
+    ...
+-------------------------------------------------------------------------------------------------------
+
+There is no need for a media item to know who references it (in fact, this would be a poor design, as it would reduce the reusability of `MediaItem`), so we can leave this as a uni-directional relationship.
+
+An event will also have a category. Once again, many events can belong to the same event category, and there is no need for an event category to know what events are in it. To add this relationship, we add the `eventCategory` property, and annotate it with `@ManyToOne`, just as we did for `MediaItem`.
+
+And that's Event created. Here is the full source:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Event.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+/**
+ * <p>
+ * Represents an event, which may have multiple performances with different dates and venues.
+ * </p>
+ * 
+ * <p>
+ * Event's principle members are it's relationship to {@link EventCategory} - specifying the type of event it is - and
+ * {@link MediaItem} - providing the ability to add media (such as a picture) to the event for display. It also contains
+ * meta-data about the event, such as it's name and a description.
+ * </p>
+ * 
+ */
+@Entity
+public class Event {
+
+    /* Declaration of fields */
+
+    /**
+     * The synthetic ID of the object.
+     */
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Long id;
+
+    /**
+     * <p>
+     * The name of the event.
+     * </p>
+     * 
+     * <p>
+     * The name of the event forms it's natural identity and cannot be shared between events.
+     * </p>
+     * 
+     * <p>
+     * Two constraints are applied using Bean Validation
+     * </p>
+     * 
+     * <ol>
+     * <li><code>@NotNull</code> &mdash; the name must not be null.</li>
+     * <li><code>@Size</code> &mdash; the name must be at least 5 characters and no more than 50 characters. This allows for
+     * better formatting consistency in the view layer.</li>
+     * </ol>
+     */
+    @Column(unique = true)
+    @NotNull
+    @Size(min = 5, max = 50, message = "An event's name must contain between 5 and 50 characters")
+    private String name;
+
+    /**
+     * <p>
+     * A description of the event.
+     * </p>
+     * 
+     * <p>
+     * Two constraints are applied using Bean Validation
+     * </p>
+     * 
+     * <ol>
+     * <li><code>@NotNull</code> &mdash; the description must not be null.</li>
+     * <li><code>@Size</code> &mdash; the name must be at least 20 characters and no more than 1000 characters. This allows for
+     * better formatting consistency in the view layer, and also ensures that event organisers provide at least some description
+     * - a classic example of a business constraint.</li>
+     * </ol>
+     */
+    @NotNull
+    @Size(min = 20, max = 1000, message = "An event's name must contain between 20 and 1000 characters")
+    private String description;
+
+    /**
+     * <p>
+     * A media item, such as an image, which can be used to entice a browser to book a ticket.
+     * </p>
+     * 
+     * <p>
+     * Media items can be shared between events, so this is modeled as a <code>@ManyToOne</code> relationship.
+     * </p>
+     * 
+     * <p>
+     * Adding a media item is optional, and the view layer will adapt if none is provided.
+     * </p>
+     * 
+     */
+    @ManyToOne
+    private MediaItem mediaItem;
+
+    /**
+     * <p>
+     * The category of the event
+     * </p>
+     * 
+     * <p>
+     * Event categories are used to ease searching of available of events, and hence this is modeled as a relationship
+     * </p>
+     * 
+     * <p>
+     * The Bean Validation constraint <code>@NotNull</code> indicates that the event category must be specified.
+     */
+    @ManyToOne
+    @NotNull
+    private EventCategory category;
+
+    /* Boilerplate getters and setters */
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public MediaItem getMediaItem() {
+        return mediaItem;
+    }
+
+    public void setMediaItem(MediaItem picture) {
+        this.mediaItem = picture;
+    }
+
+    public EventCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(EventCategory category) {
+        this.category = category;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    /* toString(), equals() and hashCode() for Event, using the natural identity of the object */
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        Event event = (Event) o;
+
+        if (name != null ? !name.equals(event.name) : event.name != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return name != null ? name.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+}
+-------------------------------------------------------------------------------------------------------
+
+Shows
+~~~~~
+
+A show is an event at a venue. It consists of a set of performances of the show. A show also contains the list of ticket prices available.
+
+Let's start building Show. Here's is our starting point:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Show.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+/**
+ * <p>
+ * A show is an instance of an event taking place at a particular venue. A show can have multiple performances.
+ * </p>
+ */
+@Entity
+public class Show {
+
+    /* Declaration of fields */
+
+    /**
+     * The synthetic id of the object.
+     */
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Long id;
+
+    /**
+     * <p>
+     * The event of which this show is an instance. The <code>@ManyToOne<code> JPA mapping establishes this relationship.
+     * </p>
+     * 
+     * <p>
+     * The <code>@NotNull</code> Bean Validation constraint means that the event must be specified.
+     * </p>
+     */
+    @ManyToOne
+    @NotNull
+    private Event event;
+
+    /**
+     * <p>
+     * The event of which this show is an instance. The <code>@ManyToOne<code> JPA mapping establishes this relationship.
+     * </p>
+     * 
+     * <p>
+     * The <code>@NotNull</code> Bean Validation constraint means that the event must be specified.
+     * </p>
+     */
+    @ManyToOne
+    @NotNull
+    private Venue venue;
+
+    /* Boilerplate getters and setters */
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Event getEvent() {
+        return event;
+    }
+
+    public void setEvent(Event event) {
+        this.event = event;
+    }
+
+    public Venue getVenue() {
+        return venue;
+    }
+
+    public void setVenue(Venue venue) {
+        this.venue = venue;
+    }
+
+    /* toString(), equals() and hashCode() for Show, using the natural identity of the object */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        Show show = (Show) o;
+
+        if (event != null ? !event.equals(show.event) : show.event != null)
+            return false;
+        if (venue != null ? !venue.equals(show.venue) : show.venue != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = event != null ? event.hashCode() : 0;
+        result = 31 * result + (venue != null ? venue.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return event + " at " + venue;
+    }
+}
+-------------------------------------------------------------------------------------------------------
+
+If you've been paying attention, you'll notice that there is a problem here. We've identified that the natural identity of this entity is formed of two properties - the _event_ and the _venue_, and we've correctly coded the `equals()` and `hashCode()` methiods (or had generate them for us!). However, we haven't told JPA that these two properties, in combination, must be unique. As there are two properties involved, we can no longer use the `@Column` annotation (which operates on a single property/table column), but now must use the class level `@Table` annotation (which operates on the whole entity/table). Change the class definition to read:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Show.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+
+...
+
+@Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "event_id", "venue_id" }))
+public class Show {
+
+    ...
+}
+-------------------------------------------------------------------------------------------------------
+
+You'll notice that JPA requires us to use the column names, rather than property names here. The column names used in the `@UniqueConstraint` annotation are those generated by default for properties called `event` and `venue`.
+
+Now, let's add the set of performances to the event. Unlike previous relationships we've seen, the relationship between a show and it's performances is bi-directional. We chose to model this as a bi-directional relationship in order to improve the generated database schema (otherwise you end with complicated mapping tables which makes updates to collections hard). Let's add the set of performances:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Show.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+
+    ...
+
+    /**
+     * <p>
+     * The set of performances of this show.
+     * </p>
+     * 
+     * <p>
+     * The <code>@OneToMany<code> JPA mapping establishes this relationship. As we will send this data 
+     * This relationship is bi-directional (a performance knows which show it is part of), and the <code>mappedBy</code>
+     * attribute establishes this. 
+     * </p>
+     * 
+     */
+    @OneToMany(mappedBy = "show", cascade = ALL)
+    @OrderBy("date")
+    private Set<Performance> performances = new HashSet<Performance>();
+
+    ...
+
+    public Set<Performance> getPerformances() {
+        return performances;
+    }
+
+    public void setPerformances(Set<Performance> performances) {
+        this.performances = performances;
+
+    ...
+
+-------------------------------------------------------------------------------------------------------
+
+As the relationship is bi-directional, we specify the `mappedBy` attribute on the `@OneToMany` annotation, which informs JPA to create a bi-directional relationship. The value of the attribute is name of property which forms the other side of the relationship - in this case, not unsuprisingly `show`!
+
+As `Show` is the owner of `Performance` (and without a show, a performance cannot exist), we add the `cascade = ALL` attribute to the `@OneToMany` annotation. As a result, any persistence operation that occurs on a show, will be propagated to it's performances. For example, if a show is removed, any associated performances will be removed as well.
+
+TODO Add fetchMode stuff
+
+We'll also need to add the set of ticket prices available for this show. Once more, this is a bi-directional relationship, owned by the show. It looks just like the set of performances.
+
+Here's the full source for `Show`:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Show.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+
+/**
+ * <p>
+ * A show is an instance of an event taking place at a particular venue. A show can have multiple performances.
+ * </p>
+ * 
+ * <p>
+ * A show contains a set of performances, and a set of ticket prices for each section of the venue for this show.
+ * </p>
+ * 
+ * <p>
+ * The event and venue form the natural id of this entity, and therefore must be unique. JPA requires us to use the class level
+ * <code>@Table</code> constraint.
+ * </p>
+ * 
+ */
+@Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "event_id", "venue_id" }))
+public class Show implements Serializable {
+
+    /* Declaration of fields */
+
+    /**
+     * The synthetic id of the object.
+     */
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Long id;
+
+    /**
+     * <p>
+     * The event of which this show is an instance. The <code>@ManyToOne<code> JPA mapping establishes this relationship.
+     * </p>
+     * 
+     * <p>
+     * The <code>@NotNull</code> Bean Validation constraint means that the event must be specified.
+     * </p>
+     */
+    @ManyToOne
+    @NotNull
+    private Event event;
+
+    /**
+     * <p>
+     * The event of which this show is an instance. The <code>@ManyToOne<code> JPA mapping establishes this relationship.
+     * </p>
+     * 
+     * <p>
+     * The <code>@NotNull</code> Bean Validation constraint means that the event must be specified.
+     * </p>
+     */
+    @ManyToOne
+    @NotNull
+    private Venue venue;
+
+    /**
+     * <p>
+     * The set of performances of this show.
+     * </p>
+     * 
+     * <p>
+     * The <code>@OneToMany<code> JPA mapping establishes this relationship. TODO Explain EAGER fetch. 
+     * This relationship is bi-directional (a performance knows which show it is part of), and the <code>mappedBy</code>
+     * attribute establishes this. We cascade all persistence operations to the set of performances, so, for example if a show
+     * is removed, then all of it's performances will also be removed.
+     * </p>
+     * 
+     * <p>
+     * Normally a collection is loaded from the database in the order of the rows, but here we want to make sure that
+     * performances are ordered by date - we let the RDBMS do the heavy lifting. The
+     * <code>@OrderBy<code> annotation instructs JPA to do this.
+     * </p>
+     */
+    @OneToMany(fetch = EAGER, mappedBy = "show", cascade = ALL)
+    @OrderBy("date")
+    private Set<Performance> performances = new HashSet<Performance>();
+
+    /**
+     * <p>
+     * The set of ticket prices available for this show.
+     * </p>
+     * 
+     * <p>
+     * The <code>@OneToMany<code> JPA mapping establishes this relationship. TODO Explain EAGER fetch. 
+     * This relationship is bi-directional (a ticket price category knows which show it is part of), and the <code>mappedBy</code>
+     * attribute establishes this. We cascade all persistence operations to the set of performances, so, for example if a show
+     * is removed, then all of it's ticket price categories are also removed.
+     * </p>
+     */
+    @OneToMany(mappedBy = "show", cascade = ALL, fetch = EAGER)
+    private Set<TicketPriceCategory> priceCategories = new HashSet<TicketPriceCategory>();
+
+    /* Boilerplate getters and setters */
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Event getEvent() {
+        return event;
+    }
+
+    public void setEvent(Event event) {
+        this.event = event;
+    }
+
+    public Set<Performance> getPerformances() {
+        return performances;
+    }
+
+    public void setPerformances(Set<Performance> performances) {
+        this.performances = performances;
+    }
+
+    public Venue getVenue() {
+        return venue;
+    }
+
+    public void setVenue(Venue venue) {
+        this.venue = venue;
+    }
+
+    public Set<TicketPriceCategory> getPriceCategories() {
+        return priceCategories;
+    }
+
+    public void setPriceCategories(Set<TicketPriceCategory> priceCategories) {
+        this.priceCategories = priceCategories;
+    }
+
+    /* toString(), equals() and hashCode() for Show, using the natural identity of the object */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        Show show = (Show) o;
+
+        if (event != null ? !event.equals(show.event) : show.event != null)
+            return false;
+        if (venue != null ? !venue.equals(show.venue) : show.venue != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = event != null ? event.hashCode() : 0;
+        result = 31 * result + (venue != null ? venue.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return event + " at " + venue;
+    }
+}
+
+-------------------------------------------------------------------------------------------------------
+
+Performances
+~~~~~~~~~~~~
+
+Finally, let's create the `Performance` class, which represents an instance of a `Show`. Performance is pretty straightforward. It contains the date and time of the performance, and the show of which it is a performance. Together, the show, and the date and time, make up the natural identity of the performance. Here's the source for `Performance`:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Performance.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+
+/**
+ * <p>
+ * A performance represents a single instance of a show.
+ * </p>
+ * 
+ * <p>
+ * The show and date form the natural id of this entity, and therefore must be unique. JPA requires us to use the class level
+ * <code>@Table</code> constraint.
+ * </p>
+ * 
+ */
+@Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = { "date", "show_id" }))
+public class Performance {
+
+    /* Declaration of fields */
+
+    /**
+     * The synthetic id of the object.
+     */
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Long id;
+
+    /**
+     * <p>
+     * The date and start time of the performance.
+     * </p>
+     * 
+     * <p>
+     * A Java {@link Date} object represents both a date and a time, whilst an RDBMS splits out Date, Time and Timestamp.
+     * Therefore we instruct JPA to store this date as a timestamp using the <code>@Temporal(TIMESTAMP)</code> annotation.
+     * </p>
+     * 
+     * <p>
+     * The date and time of the performance is required, and the Bean Validation constraint <code>@NotNull</code> enforces this.
+     * </p>
+     */
+    @Temporal(TIMESTAMP)
+    @NotNull
+    private Date date;
+
+    /**
+     * <p>
+     * The show of which this is a performance. The <code>@ManyToOne<code> JPA mapping establishes this relationship.
+     * </p>
+     * 
+     * <p>
+     * The show of which this is a performance is required, and the Bean Validation constraint <code>@NotNull</code> enforces
+     * this.
+     * </p>
+     */
+    @ManyToOne
+    @NotNull
+    private Show show;
+
+    /* Boilerplate getters and setters */
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setShow(Show show) {
+        this.show = show;
+    }
+
+    public Show getShow() {
+        return show;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
+    /* equals() and hashCode() for Performance, using the natural identity of the object */
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        Performance that = (Performance) o;
+
+        if (date != null ? !date.equals(that.date) : that.date != null)
+            return false;
+        if (show != null ? !show.equals(that.show) : that.show != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = date != null ? date.hashCode() : 0;
+        result = 31 * result + (show != null ? show.hashCode() : 0);
+        return result;
+    }
+}
+-------------------------------------------------------------------------------------------------------
+
+Of interest here is the storage of the date and time. 
+
+A Java `Date` represents "a specific instance in time, with millisecond precision" and is the recommended construct for representing date and time in the JDK. A RDBMS's _DATE_ type typically has day precision only, and uses the _DATETIME_ or _TIMESTAMP_ types to represent an instance in time, and often only to second precision. The 
+
+As the mapping between Java date and time, and database date daten and time isn't straightforward, JPA requires us to use the `@Temporal` annotation on any property of type `Date`, and to specify whether the `Date` should be stored as a date, a time or a timestamp (date and time).
+
+Venue
+~~~~~
+
+Now, let's build out the entities to represent the venue.
+
+We start by adding an entity to represent the venue. A venue needs to have a name, a description, a capacity, an address, an associated media item and a set sections in which people can sit.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Venue.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+
+/**
+ * <p>
+ * Represents a single venue
+ * </p>
+ * 
+ */
+@Entity
+public class Venue {
+
+    /* Declaration of fields */
+
+    /**
+     * The synthetic id of the object.
+     */
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
+    private Long id;
+
+    /**
+     * <p>
+     * The name of the event.
+     * </p>
+     * 
+     * <p>
+     * The name of the event forms it's natural identity and cannot be shared between events.
+     * </p>
+     * 
+     * <p>
+     * The name must not be null and must be one or more characters, the Bean Validation constrain <code>@NotEmpty</code>
+     * enforces this.
+     * </p>
+     */
+    @Column(unique = true)
+    @NotEmpty
+    private String name;
+
+    /**
+     * The address of the venue
+     */
+    @Embedded
+    private Address address = new Address();
+
+    /**
+     * A description of the venue
+     */
+    private String description;
+
+    /**
+     * <p>
+     * A set of sections in the venue
+     * </p>
+     * 
+     * <p>
+     * The <code>@OneToMany<code> JPA mapping establishes this relationship. TODO Explain EAGER fetch. 
+     * This relationship is bi-directional (a section knows which venue it is part of), and the <code>mappedBy</code>
+     * attribute establishes this. We cascade all persistence operations to the set of performances, so, for example if a venue
+     * is removed, then all of it's sections will also be removed.
+     * </p>
+     */
+    @OneToMany(cascade = ALL, fetch = EAGER, mappedBy = "venue")
+    private Set<Section> sections = new HashSet<Section>();
+
+    /**
+     * The capacity of the venue
+     */
+    private int capacity;
+
+    /**
+     * An optional media item to entice punters to the venue. The <code>@ManyToOne</code> establishes the relationship.
+     */
+    @ManyToOne
+    private MediaItem mediaItem;
+
+    /* Boilerplate getters and setters */
+    
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
+    public MediaItem getMediaItem() {
+        return mediaItem;
+    }
+
+    public void setMediaItem(MediaItem description) {
+        this.mediaItem = description;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Set<Section> getSections() {
+        return sections;
+    }
+
+    public void setSections(Set<Section> sections) {
+        this.sections = sections;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
+    }
+
+    /* toString(), equals() and hashCode() for Venue, using the natural identity of the object */
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        Venue venue = (Venue) o;
+
+        if (address != null ? !address.equals(venue.address) : venue.address != null)
+            return false;
+        if (name != null ? !name.equals(venue.name) : venue.name != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + (address != null ? address.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+}
+-------------------------------------------------------------------------------------------------------
+
+In creating this entity, we've followed all the design and implementation decisions previously discussed, with one new concept. Rather than add the properties for street, city, postal code etc. to this object, we've extracted them into the `Address` object, and included it in the `Venue` object using composition. This would allow us to reuse the Address object in other places (such as a customer's address).
+
+A RDBMS doesn't have a similar concept to composition, so we need to choose whether to represent the address as a separate entity, and create a relationship between the venue and the address, or whether to map the properties from `Address` to the table for the owning entity, in this case `Venue`. It doesn't make much sense for an address to be a full entity - we're not going to want to run queries against the address in isolation, nor do we want to be able to delete or update an address in solation - in essence, the address doesn't have a standalone identity outside of the object into which it is composed.
+
+To _embed_ the `Address` into `Venue` we add the `@Embeddable` annotation to the `Address` class. However, unlike a full entity, there is no need to add an identifier. Here's the source for `Address`:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Address.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+
+/**
+ * <p>
+ * A reusable representation of an address.
+ * </p>
+ * 
+ * <p>
+ * Addresses are used in many places in an application, so to observe the DRY principle, we model Address as an embeddable
+ * entity. An embeddable entity appears as a child in the object model, but no relationship is established in the RDBMS..
+ * </p>
+ * 
+ * @author Marius Bogoevici
+ * @author Pete Muir
+ */
+@Embeddable
+public class Address {
+
+    /* Declaration of fields */
+    private String street;
+    private String city;
+    private String country;
+    
+    /* Declaration of boilerplate getters and setters */
+
+    public String getStreet() {
+        return street;
+    }
+
+    public void setStreet(String street) {
+        this.street = street;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    /* toString(), equals() and hashCode() for Address, using the natural identity of the object */
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        Address address = (Address) o;
+
+        if (city != null ? !city.equals(address.city) : address.city != null)
+            return false;
+        if (country != null ? !country.equals(address.country) : address.country != null)
+            return false;
+        if (street != null ? !street.equals(address.street) : address.street != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = street != null ? street.hashCode() : 0;
+        result = 31 * result + (city != null ? city.hashCode() : 0);
+        result = 31 * result + (country != null ? country.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return street + ", " + city + ", " + country;
+    }
+}
+-------------------------------------------------------------------------------------------------------
+
+Sections
+~~~~~~~~
+
+A venue consists of a number of seating sections. Each seating section has a name, a description, the number of rows in the section, and the number of seats in a row. It's natural identifier is the name of section combined with the venue (a venue can't have two sections with the same name). `Section` doesn't introduce any new concepts, so go ahead and copy the source in, if you are building the application whilst following this tutorial.
+
+Booking, Ticket & Seat
+~~~~~~~~~~~~~~~~~~~~~~
+
+There aren't many new concepts to explore in the TicketMonster data model, so if you are following along with the tutorial, you should copy in the `Booking`, `Ticket` and `Seat` classes.
+
+Once the user has selected an event, identified the venue, and selected a performance, they have the opportunity to request a number of seats in a given section, and select the category of tickets required. Once they chosen their seats, and entered their email address, a `Booking` is created.
+
+A booking consists of the date the booking was created, an email address (as TicketMonster doesn't yet have fully fledged user management), a set of tickets and the associated performance. The set of tickets shows us how to create a uni-directional one-to-many relationship:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Booking.java
+[source,java]
+-------------------------------------------------------------------------------------------------------
+
+    ...
+
+    /**
+     * <p>
+     * The set of tickets contained within the booking. The <code>@OneToMany<code> JPA mapping establishes this relationship.
+     * </p>
+     * 
+     * <p>
+     * The set of tickets is eagerly loaded because FIXME . All operations are cascaded to each ticket, so for example if a
+     * booking is removed, then all associated tickets will be removed.
+     * </p>
+     * 
+     * <p>
+     * This relationship is uni-directional, so we need to inform JPA to create a foreign key mapping. The foreign key mapping
+     * is not visible in the {@link Ticket} entity despite being present in the database.
+     * </p>
+     * 
+     */
+    @OneToMany(fetch = EAGER, cascade = ALL)
+    @JoinColumn    @NotEmpty
+    @Valid
+    private Set<Ticket> tickets = new HashSet<Ticket>();
+
+    ...
+-------------------------------------------------------------------------------------------------------
+
+We add the `@JoinColumn` annotation, which sets up a foreign key in `Ticket`, but doesn't expose the booking on Ticket. This prevents the use of messy mapping tables, whilst preserving the integrity of the entity model.
+
+A ticket embeds the seat allocated, and contains a reference to the category under which it was sold. It also contains the price at which it was sold.
