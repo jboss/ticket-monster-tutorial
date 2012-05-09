@@ -10,10 +10,7 @@ if [[ $BASH_VERSION < $REQUIRED_BASH_VERSION ]]; then
 fi
 
 # Canonicalise the source dir, allow this script to be called anywhere
-
-SOURCE="${BASH_SOURCE[0]}"
-while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
-DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 
 # DEFINE
 
