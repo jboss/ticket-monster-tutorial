@@ -28,7 +28,7 @@ mkdir -p $TARGET
 files=`find * -iname \*.asciidoc`
 
 element_count=${#OUTPUT_FORMATS[@]}
-for ((i=0; i <= $element_count; i++))
+for ((i=0; i < $element_count; i++))
 do
    output_format=${OUTPUT_FORMATS[i]}
    dir=$TARGET/$output_format
