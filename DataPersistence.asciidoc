@@ -7,9 +7,9 @@ Learn how to build the persistence layer for an application, and how to test it
 You have set up your project successfully. Now it is time to begin working on the TicketMonster application, and the first step is adding the persistence layer. After reading this guide, you'll understand what design and implementation choices to make. Topics covered include:
 
 * RDBMS design using JPA entity beans
-* Basic unit testing using JUnit
-* How to populate some test data
 * How to validate your entities using Bean Validation
+* How to populate test data
+* Basic unit testing using JUnit
 
 We'll round out the guide by revealing the required, yet short and sweet, configuration.
 
@@ -1520,3 +1520,66 @@ A booking consists of the date the booking was created, an email address (as Tic
 We add the `@JoinColumn` annotation, which sets up a foreign key in `Ticket`, but doesn't expose the booking on Ticket. This prevents the use of messy mapping tables, whilst preserving the integrity of the entity model.
 
 A ticket embeds the seat allocated, and contains a reference to the category under which it was sold. It also contains the price at which it was sold.
+
+Connecting to the database
+--------------------------
+
+In this example, we are using the in-memory H2 database, which is very easy to set up on JBoss AS. JBoss AS allows you deploy a datasource inside your application's `WEB-INF` directory. You can locate the source in `src/main/webapp/WEB-INF/ticket-monster-ds.xml`:
+
+.src/main/webapp/WEB-INF/ticket-monster-ds.xml
+[source,xml]
+-------------------------------------------------------------------------------------------------------
+<datasources xmlns="http://www.jboss.org/ironjacamar/schema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.jboss.org/ironjacamar/schema http://docs.jboss.org/ironjacamar/schema/datasources_1_0.xsd">
+    <!-- The datasource is bound into JNDI at this location. We reference 
+        this in META-INF/persistence.xml -->
+    <datasource jndi-name="java:jboss/datasources/TicketMonsterDS"
+        pool-name="ticket-monster" enabled="true" use-java-context="true">
+        <connection-url>jdbc:h2:mem:ticket-monster;DB_CLOSE_ON_EXIT=FALSE</connection-url>
+        <driver>h2</driver>
+        <security>
+            <user-name>sa</user-name>
+            <password>sa</password>
+        </security>
+    </datasource>
+</datasources>
+-------------------------------------------------------------------------------------------------------
+
+The datasource configures an H2 in-memory database, called _ticket-monster_, and registeres a datasource in JNDI at `java:jboss/datasources/TicketMonsterDS`.
+
+Now we need to configure JPA to use the datasource. This is done in `src/main/resources/META-INF/persistence.xml`:
+
+.src/main/resources/persistence.xml
+[source,xml]
+-------------------------------------------------------------------------------------------------------
+<persistence version="2.0"
+   xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="
+        http://java.sun.com/xml/ns/persistence
+        http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
+   <persistence-unit name="primary">
+      <!-- If you are running in a production environment, add a managed 
+         data source, this example data source is just for development and testing! -->
+      <!-- The datasource is deployed as WEB-INF/ticket-monster-ds.xml, you
+         can find it in the source at src/main/webapp/WEB-INF/ticket-monster-ds.xml -->
+      <jta-data-source>java:jboss/datasources/TicketMonsterDS</jta-data-source>
+      <properties>
+         <!-- Properties for Hibernate -->
+         <property name="hibernate.hbm2ddl.auto" value="create-drop" />
+         <property name="hibernate.show_sql" value="false" />
+      </properties>
+   </persistence-unit>
+</persistence>
+-------------------------------------------------------------------------------------------------------
+
+As our application has only one datasource, and hence one persistence unit, the name given to the persistence unit doesn't really matter. We call ours `primary`, but you can change this as you like. We tell JPA about the datasource bound in JNDI.
+
+Hibernate includes the ability to generate tables from entities, which here we have configured. We don't recommend using this outside of development. Updates to databases in production should be done manually.
+
+Populating Test Data
+--------------------
+
+Whilst we develop our application, it's useful to be able to populate the database with test data. Luckily, Hibernate makes this easy. Just add a file called `import.sql` onto the classpath of your application (we keep it in `src/main/resources/import.sql`. In it, we just write standard sql statements suitable for the database we are using. To do this, you need to know the generated column and table names for your entities. The best way to work these out is to look at the h2console.
+
+The h2console is included in the JBoss AS quickstarts, along with instructions on how to use it. The JDF site contains more information on the JBoss AS Quickstarts.
