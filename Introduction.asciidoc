@@ -664,12 +664,6 @@ Under the File menu, you will find a View Page Source option that will open up t
 .Mobile BrowserSim View Source
 image::gfx/introduction/mobile_browsersim_bofa_source.png[]
 
-Conclusion
-----------
-
-blah, blah, blah
-
-
 
 
 
