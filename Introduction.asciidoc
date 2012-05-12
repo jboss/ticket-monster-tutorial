@@ -664,6 +664,9 @@ Under the File menu, you will find a View Page Source option that will open up t
 .Mobile BrowserSim View Source
 image::gfx/introduction/mobile_browsersim_bofa_source.png[]
 
+Conclusion
+----------
+This concludes our introduction to building HTML5 Mobile Web applications using Java EE 6 and JBoss Developer Studio.
 
 
 
