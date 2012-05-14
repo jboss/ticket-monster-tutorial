@@ -1,8 +1,8 @@
-h1. Building a statistics dashboard using GWT and ...
+Building a statistics dashboard using GWT and ...
+=================================================
 
-h2. Learn how to implement an event-driven data collection dashboard using GWT and CDI client-server eventing
-
----
+Learn how to implement an event-driven data collection dashboard using GWT and CDI client-server eventing
+---------------------------------------------------------------------------------------------------------
 
 You've just an administration view, and would like to collect real-time information about ticket sales and attendance. Now it would be good to implement a dashboard that can collect data and receive real-time updates. After reading this tutorial, you will understand our dashboard design and the choices that we made in its implementation. Topics covered include:
 

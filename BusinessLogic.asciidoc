@@ -1,8 +1,8 @@
-h1. Building the business services 
+Building the business services 
+==============================
 
-h2. Learn how to design and implement the business layer of an application and how to make it usable by various front-ends
-
----
+Learn how to design and implement the business layer of an application and how to make it usable by various front-ends
+----------------------------------------------------------------------------------------------------------------------
 
 You've just defined the domain model of your application and created its persistence layer. Now you need to implement the services that implement the business logic of your application and expose them to the front-end. After reading this, you'll understand how to design the business layer and what choices to make while developing it. Topics covered include:
 
