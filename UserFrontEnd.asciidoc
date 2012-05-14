@@ -1,57 +1,83 @@
 Building the User UI using HTML5
 ================================
-Marius Bogoevici <mariusb@redhat.com>
-April 2012
+
+Learn how to build the user interface in desktop and mobile version
+-------------------------------------------------------------------
 
 You've just implemented the business services of your application, and exposed them through RESTful endpoints. Now you need to implement a flexible user interface that can be easily used with both desktop and mobile clients. After reading this tutorial, you will understand our front-end design and the choices that we made in its implementation. Topics covered include:
 
 * Creating single-page applications using HTML5, JavaScript and JSON
-* Using JavaScript frameworks such as jQuery for invoking RESTful endpoints and manipulating page content
+* Using JavaScript frameworks for invoking RESTful endpoints and manipulating page content
 * Feature and device detection
 * Implementing a version of the user interface that is optimized for mobile clients using JavaScript frameworks such as jQuery mobile
 
 The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through. For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
 
-
 First, the basics
 -----------------
 
-In this tutorial, you will build a single-page application. All the necessary code: HTML, CSS and JavaScript is retrieved within a single page load. Rather than refreshing the page every time the user changes a view, the content of the page will be redrawn by manipulating the DOM in JavaScript. The application uses REST calls to retrieve data from the server.
+In this tutorial, we will build a single-page application. All the necessary code: HTML, CSS and JavaScript is retrieved within a single page load. Rather than refreshing the page every time the user changes a view, the content of the page will be redrawn by manipulating the DOM in JavaScript. The application uses REST calls to retrieve data from the server.
 
 [[single-page-app_image]]
 .Single page application
 image::gfx/single-page-app.png[]
 
-You will use jQuery to simplify DOM manipulation. Because this is a moderately complex example, which involves multiple views and different types of data, you will use a client-side MVC framework to structure your application, which provides amongst others:
+MVC support
+~~~~~~~~~~~
+
+Because this is a moderately complex example, which involves multiple views and different types of data, you will use a client-side MVC framework to structure your application, which provides amongst others:
 
 * routing support within your single page application;
 * event-driven interaction between views and data;
 * simplified CRUD invocations on RESTful services.
 
-You will build two variants of the single-page-application: one for the desktop and one for mobile clients. This is because the page flow and structure, as well as feature set are slightly different in each case. 
-
-For the mobile component of your application, you will use jQuery Mobile. jQuery Mobile adds to your application support for mobile look and feel (layout, transitions), as well as mobile-device specific interaction (for example tap and slide).
-
-Both the desktop and mobile variant of the application use backbone.js to structure the application. The general architecture is shown in figure ... 
+The client-side MVC framework that we use in this application in `backbone.js`. Its general architecture is shown below:
 
 [[use-of-backbone_image]]
 .Backbone interaction in Ticket Monster
 image::gfx/backbone-usage.png[]
 
-Ticket Monster defines a number of Backbone components. 
+Modularity
+~~~~~~~~~~
 
-Models hold data, handle data change events and can perform CRUD operations with the REST service. For example nearly each domain entity (booking, event, venue) is represented by a corresponding Backbone model. When handling groups of entities (or models), you will use Backbone collections.
+As the application becomes more modular, the code also becomes more fragmented in order to support good separation of concerns. Ensuring that all the modules of the application are loaded properly at runtime becomes a more complex task as the application size increases. For conquering this complexity, we will be using the Asynchronous Module Definition mechanism as implemented by the `require.js` library.
 
-Views are responsible for rendering the UI by manipulating the DOM, and handling user interaction events like selection changes or button clicks.
 
-The router executes actions in response to a hashchange (equivalent to the user navigating to a different page inside the application). One of the benefits of using hash-based URL patterns is that the URLs used for accessing views inside the application can be bookmarked and passed across.
+.Asynchronous Module Definition
+***********************************************************************
+The Asynchronous Module Definition (AMD) API specifies a mechanism for defining modules such that the module and its dependencies can be asynchronously loaded. This is particularly well suited for the browser environment where synchronous loading of modules incurs performance, usability, debugging, and cross-domain access problems.
+***********************************************************************
 
-Creating the desktop page
--------------------
+Templating
+~~~~~~~~~~
 
-The main page of the application will contain little to no content. It loads the custom stylesheet of the application, as well as the one required by Twitter Bootstrap, which is used for scaffolding the UI, as well as for a few components used in the application (like the carousel in the events or venues page).
+Instead of manipulating the DOM directly, and mixing up HTML with the JavaScript code, we create HTML markup fragments separately as templates, to be applied when the application views render. 
 
-As you see, there is not too much functionality, however. this is left to another layer of the application.
+In this application we use the templating support provided by `underscore.js`.
+
+Mobile and desktop versions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We will build two variants of the single-page-application: one for the desktop and one for mobile clients. This is because the page flow and structure, as well as feature set are slightly different in each case. Because they are very similar, we will cover the desktop version of the application first, and then we will explain what is different in the case of the mobile version.
+
+Setting up the structure
+------------------------
+
+Before we start developing the user interface, we need to set up the general application structure and copy the library files. So the first thing to do is to create the directory structure.
+
+[[ui-directory-structure]]
+.File structure for our web application
+image::gfx/ui-file-structure.png[]
+
+We will copy all stylesheets in the `resources/css` folder, `resources/img` contains the images and `resources/templates` contains the HTML templates for generating the views. 
+
+`resources/js` will contain the JavaScript code, split between `resource/js/lib` - which contains the libraries used by the application and `resources/js/app` which contains the application code. The latter will contain the application modules, in subsequent subdirectories, for models, collections, routers and views.
+
+The first step in implementing our solution is copying the following files into the `resources/css` and `resources/js/lib` folders:
+
+TODO
+
+Then, we will create the main page of the application (which will be actually referenced by the browser).
 
 .src/main/webapp/desktop-index.html
 [source,html]
@@ -64,19 +90,21 @@ As you see, there is not too much functionality, however. this is left to anothe
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0;">
 
     <link type="text/css" rel="stylesheet" href="resources/css/screen.css"/>
-    <link rel="stylesheet" href="resources/bootstrap/css/bootstrap.css" type="text/css" media="all"/>
+    <link rel="stylesheet" href="resources/css/bootstrap.css" type="text/css" media="all"/>
     <script data-main="resources/js/main-desktop" src="resources/js/libs/require.js"></script>
-    
-    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+
+    <!-- Add JavaScript library for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    
-    
+
 </head>
 <body>
 
-
+<!--
+    The main layout of the page - contains the menu and the 'content' &lt;div/&gt; in which all the
+    views will render the content.
+-->
 <div id="container">
     <div id="menu">
         <div class="navbar">
@@ -84,10 +112,10 @@ As you see, there is not too much functionality, however. this is left to anothe
                 <div class="container">
                     <a class="brand">JBoss Ticket Monster</a>
                     <ul class="nav">
-                        <li><a data-tm-role="top-menu-item" href="#events">Events</a></li>
-                        <li><a data-tm-role="top-menu-item" href="#venues">Venues</a></li>
-                        <li><a data-tm-role="top-menu-item" href="#bookings">Bookings</a></li>
-                        <li><a data-tm-role="top-menu-item" href="#about">About</a></li>
+                        <li><a href="#events">Events</a></li>
+                        <li><a href="#venues">Venues</a></li>
+                        <li><a href="#bookings">Bookings</a></li>
+                        <li><a href="#about">About</a></li>
                     </ul>
                 </div>
             </div>
@@ -97,488 +125,719 @@ As you see, there is not too much functionality, however. this is left to anothe
     </div>
 </div>
 
-
 <footer style="">
-    <div style="text-align: center;"><img src="resources/gfx/logo.png" alt="HTML5"/></div>
+    <div style="text-align: center;"><img src="resources/img/logo.png" alt="HTML5"/></div>
 </footer>
 
 </body>
 </html>
 -------------------------------------------------------------------------------------------------------
 
-AMD in TicketMonster
-----------------------
+As you can see, the page does not contain too much. It loads the custom stylesheet of the application, as well as the one required by Twitter bootstrap, sets up instructions for loading the application scripts and defines a general structure of the page.  
 
-The JavaScript code for your application is organized in modules, which allows a cleaner separation between 
-code and the UI design.
+The actual HTML code of the page contains a menu definition which will be present on all the pages, as well as an empty element named `content` which is essentially a placeholder for the application views. When a view is displayed, it will apply a template and populate it.
 
+The JavaScript code of the page is loaded by `require.js`, according to the module definition contained in `resources/js/main-desktop.js`, as follows:
 
-Viewing the events
-------------------
-
-You will begin implementing the view by adding the model for the Event entity and its associated collection.
-
-.src/main/webapp/desktop-index.html
+.src/main/webapp/resources/js/main-desktop.js
 [source,js]
 -------------------------------------------------------------------------------------------------------
-
-TicketMonster.Event = Backbone.Model.extend({
-    urlRoot:'rest/events'
-})
-
-TicketMonster.Events = Backbone.Collection.extend({
-    url:"rest/events",
-    model:TicketMonster.Event,
-    id:"id",
-    comparator:function (model) {
-        return model.get('category').id;
+/**
+ * Shortcut alias definitions - will come in handy when declaring dependencies
+ * Also, they allow you to keep the code free of any knowledge about library 
+ * locations and versions
+ */
+require.config({
+    paths: {
+        jquery:'libs/jquery-1.7.1',
+        underscore:'libs/underscore',
+        text:'libs/text',
+        order:'libs/order',
+        bootstrap: 'libs/bootstrap',
+        utilities: 'app/utilities',
+        router
     }
 });
 
+// Backbone is not AMD-ready, so a individual module is declared
+define("backbone", [
+    // the order plugin is used to ensure that the modules are loaded in the right order
+    'order!jquery',
+    'order!underscore',
+    'order!libs/backbone'], function(){
+    return Backbone;
+});
+
+// Now we declare all the dependencies
+require([
+    'order!jquery', 
+    'order!underscore',
+    'order!backbone',
+    'text',
+    'order!bootstrap',
+], function(){
+    console.log('all loaded')
+});
 -------------------------------------------------------------------------------------------------------
 
-The `urlRoot` property of `TicketMonster.Event` maps the CRUD operations of the entity to the REST service layer. Same goes for the `url` property of `TicketMonster.Events`. We have also indicated which is the identifier property of the Event model, and that the Events collection must sort its members by id internally.
+As you see, this module loads all the utility libraries. Later on, when we will have written the application code too, we will load it here as well.
+
+Visualising Events
+------------------
+
+The first use case that we implement is event navigation. The users will be able to view the list of events and select the one that they want to attend. After doing so, they will select a venue, and will be able to choose a performance date and time.
+
+The Event model
+~~~~~~~~~~~~~~~
+
+We will define a Backbone model for holding individual event data. Nearly each domain entity (booking, event, venue) is represented by a corresponding Backbone model.
+
+.src/main/webapp/resources/js/app/models/event.js
+[source,js]
+-------------------------------------------------------------------------------------------------------
+/**
+ * Module for the Event model
+ */
+define([ 
+    'backbone' // depends and imports Backbone
+], function (Backbone) {
+    /**
+     * The Event model class definition
+     * Used for CRUD operations against individual events
+     */
+    var Event = Backbone.Model.extend({
+        urlRoot:'rest/events' // the URL for perfoming CRUD operations
+    });
+    // export the Event class
+    return Event;
+});
+-------------------------------------------------------------------------------------------------------
+
+The `Event` model can perform CRUD operations directly against the REST services. 
+
+.Backbone Models
+***********************************************************************
+Backbone models contain the interactive data as well as a large part of the logic surrounding it: conversions, validations, computed properties, and access control. The can also perform CRUD operations with the REST service. 
+***********************************************************************
+
+The Events collection
+~~~~~~~~~~~~~~~~~~~~~
+
+We will define a Backbone collection for handling groups of events (like the events list). 
+
+.src/main/webapp/resources/js/app/collections/events.js
+[source,js]
+-------------------------------------------------------------------------------------------------------
+/**
+ * Module for the Events collection
+ */
+define([
+    // Backbone and the collection element type are dependencies
+    'backbone',
+    'app/models/event'
+], function (Backbone, Event) {
+    /**
+     *  Here we define the Bookings collection
+     *  We will use it for CRUD operations on Bookings
+     */
+    var Events = Backbone.Collection.extend({
+        url:"rest/events", // the URL for performing CRUD operations
+        model: Event,
+        id:"id", // the 'id' property of the model is the identifier
+        comparator:function (model) {
+            return model.get('category').id;
+        }
+    });
+    return Events;
+});
+-------------------------------------------------------------------------------------------------------
 
 By mapping the model and collection to a REST endpoint you can perform CRUD operations without having to invoke the services explicitly. You will see how that works a bit later.
 
-Next, you will implement the view that displays the events. 
+.Backbone Collections
+***********************************************************************
+Collections are ordered sets of models. They can handle events which are fired as a result of a change to a
+individual member, and can perform CRUD operations for syncing up contents against RESTful services.
+*********************************************************************** 
 
-.src/main/webapp/desktop-index.html
-[source,js]
-----------------------------------------------------------------------------------------------------
-TicketMonster.EventsCategoriesView = Backbone.View.extend({
-    render:function () {
-        applyTemplate($(this.el), $('#main-view'), {})
-        var summaryView = new TicketMonster.EventSummaryView({model:this.model});
-        $("#itemSummary").append(summaryView.render().el)
-        this.menuView = new TicketMonster.EventMenuView({summaryView:summaryView, model:this.model, el:$("#itemMenu")});
-        this.menuView.render()
-    }
-    
-})
--------------------------------------------------------------------------------------------------------
+The EventsView view
+~~~~~~~~~~~~~~~~~~~
 
-Each view is assigned to a DOM element (`el` property). The `render` method will be invoked when this view is rendered and contains instructions for manipulating the DOM. Rather than writing these instructions directly in the method, you will create a template and apply it, thus separating the HTML view code from the view implementation. In this example, we use underscore.js for templating.
+Now that we have implemented the data components of the example, we need to create the view that displays them.
 
-First, you will create the template.
-
-.src/main/webapp/resources/templates/templates.html
--------------------------------------------------------------------------------------------------------
-<script id="main-view" type="text/template">
-    <div class="row-fluid">
-        <div class="span3">
-            <div id="itemMenu"></div>
-        </div>
-    <div id='itemSummary' class="span9"/>
-</script>
-
--------------------------------------------------------------------------------------------------------
-
-Now, add the template rendering code to the javascript utility file:
-
-.src/main/webapp/resources/js/tm
+.src/main/webapp/resources/js/app/views/desktop/events.js
 [source,js]
 -------------------------------------------------------------------------------------------------------
-function renderTemplate(template, data) {
-    return _.template(template.html(), (data == undefined) ? {} : data);
-}
+define([
+    'backbone',
+    'utilities',
+    'text!../../../../templates/desktop/events.html'
+], function (
+    Backbone,
+    utilities,
+    eventsTemplate) {
 
-function applyTemplate(target, template, data) {
-    return target.empty().append(renderTemplate(template, data))
-}
--------------------------------------------------------------------------------------------------------
+    var EventsView = Backbone.View.extend({
+        events:{
+            "click a":"update"
+        },
+        render:function () {
+            var categories = _.uniq(
+                _.map(this.model.models, function(model){
+                    return model.get('category')
+                }, function(item){
+                    return item.id
+                }));
+            utilities.applyTemplate($(this.el), eventsTemplate, {categories:categories, model:this.model})
+            $(this.el).find('.item:first').addClass('active');
+            $(".collapse").collapse()
+            $("a[rel='popover']").popover({trigger:'hover'});
+            return this
+        },
+        update:function () {
+            $("a[rel='popover']").popover('hide')
+        }
+    });
 
-The `EventsCategoriesView` is a composite view. It contains two sub-views. This allows to better encapsulate view-specific behaviour and create reusable components. We will create two sub-views: `EventSummaryView` and `EventMenuView`, to display the two components of the screen. In the `render` function of `EventsCategoryView` we are attaching them to corresponding `div` elements.
- 
-.src/main/webapp/desktop-index.html
-[source,js]
--------------------------------------------------------------------------------------------------------
-
-TicketMonster.EventMenuView = Backbone.View.extend({
-    events:{
-        "click a":"update"
-    },
-    tagName:'div',
-    render:function () {
-        var self = this
-        $(this.el).empty()
-        var current_category = null
-        _.each(this.model.models, function (event) {
-            var model_category = event.get('category')
-            if (current_category !== model_category.id) {
-                $(self.el).append(renderTemplate($('#category-title'), model_category));
-                current_category = model_category.id;
-            }
-            var view = new TicketMonster.EventSummaryLineView({summaryView:self.options.summaryView, model:event});
-            $("#category-" + current_category).append(view.render().el);
-        })
-        $(".collapse").collapse()
-        $("a[rel='popover']").popover({trigger:'hover'})
-        return this
-    },
-    update:function () {
-        $("a[rel='popover']").popover('hide')
-    }
+    return  EventsView;
 });
-
-
-TicketMonster.EventSummaryView = Backbone.View.extend({
-    render:function (data) {
-        if (data) {
-            applyTemplate($(this.el), $("#event-summary-view"), data.attributes)
-        }
-        else {
-            applyTemplate($(this.el), $("#event-carousel"), {models:this.model.models});
-            $(this.el).find('.item:first').addClass('active')
-        }
-        return this
-    }
-})
-
-
-TicketMonster.EventSummaryLineView = Backbone.View.extend({
-    tagName:'div',
-    events:{
-        "click":"notify"
-    },
-    render:function () {
-        applyTemplate($(this.el), $("#event-summary"), this.model.attributes)
-        return this;
-    },
-    notify:function () {
-        this.options.summaryView.render(this.model)
-    }
-})
-
 -------------------------------------------------------------------------------------------------------
 
-`EventMenuView` is a composite view by itself. Its model is a collection of `Event` objects, and it has one `EventSummaryLineView` subview for each `Event` in the associated collection. This allows the subviews to handle events in the context of their associated model elements.
+The view is attached to a DOM element (the `el` property). When the `render` method is invoked, it manipulates the DOM and renders the view. We could have achieved that by writing these instructions directly in the method, but that would make it hard to change the page design later on. Rather than that, we will create a template and apply it, thus separating the HTML view code from the view implementation. 
 
-You will also need add the templates associated with each view:
-
-.src/main/webapp/resources/templates/templates.html
+.src/main/webapp/resources/templates/desktop/events.html
+[source,html]
 -------------------------------------------------------------------------------------------------------
-<script id="category-title" type="text/template">
-    <div class="accordion-group">
-        <div class="accordion-heading">
-            <a class="accordion-toggle" style="color: #fff; background: #000;"
-               data-target="#category-<%=id%>-collapsible" data-toggle="collapse"
-               data-parent="#itemMenu"><%= description %></a>
-        </div>
-        <div id="category-<%=id%>-collapsible" class="collapse in accordion-body">
-            <div id="category-<%=id%>" class="accordion-inner"></div>
+<div class="row-fluid">
+    <div class="span3">
+        <div id="itemMenu">
+
+            <%
+            _.each(categories, function (category) {
+            %>
+            <div class="accordion-group">
+                <div class="accordion-heading">
+                    <a class="accordion-toggle" style="color: #fff; background: #000;"
+                       data-target="#category-<%=category.id%>-collapsible" data-toggle="collapse"
+                       data-parent="#itemMenu"><%= category.description %></a>
+                </div>
+                <div id="category-<%=category.id%>-collapsible" class="collapse in accordion-body">
+                    <div id="category-<%=category.id%>" class="accordion-inner">
+
+                        <%
+                        _.each(model.models, function (model) {
+                        if (model.get('category').id == category.id) {
+                        %>
+                        <p><a href="#venues/<%=model.attributes.id%>" rel="popover"
+                              data-content="<%=model.attributes.description%>"
+                              data-original-title="<%=model.attributes.name%>"><%=model.attributes.name%></a></p>
+                        <% }
+                        });
+                        %>
+                    </div>
+                </div>
+            </div>
+            <% }); %>
         </div>
     </div>
-</script>
+    <div id='itemSummary' class="span9">
+        <div class="row-fluid">
+            <div class="span11">
+                <div id="eventCarousel" class="carousel">
+                    <!-- Carousel items -->
+                    <div class="carousel-inner">
+                        <%_.each(model.models, function(model) { %>
+                        <div class="item">
+                            <img src='rest/media/<%=model.attributes.mediaItem.id%>'/>
 
-<script id="event-summary" type="text/template">
-    <a href="#events/<%=id%>" rel="popover"
-       data-content="<%=description%>" data-original-title="<%=name%>"><%=name%></a>
-</script>
+                            <div class="carousel-caption">
+                                <h4><%=model.attributes.name%></h4>
 
-<script id="event-carousel" type="text/template">
-    <div class="row-fluid">
-        <div class="span11">
-            <div id="eventCarousel" class="carousel">
-                <!-- Carousel items -->
-                <div class="carousel-inner">
-                    <%_.each(models, function(model) { %>
-                    <div class="item">
-                        <img src='rest/media/<%=model.attributes.picture.id%>'/>
-
-                        <div class="carousel-caption">
-                            <h4><%=model.attributes.name%></h4>
-                            <p><%=model.attributes.description%></p><a class="btn btn-danger"
-                                                                       href="#events/<%=model.id%>">Book tickets</a>
+                                <p><%=model.attributes.description%></p>
+                                <a class="btn btn-danger" href="#events/<%=model.id%>">Book tickets</a>
+                            </div>
                         </div>
+                        <% }) %>
                     </div>
-                    <% }) %>
+                    <!-- Carousel nav -->
+                    <a class="carousel-control left" href="#eventCarousel" data-slide="prev">&lsaquo;</a>
+                    <a class="carousel-control right" href="#eventCarousel" data-slide="next">&rsaquo;</a>
                 </div>
-                <!-- Carousel nav -->
-                <a class="carousel-control left" href="#eventCarousel" data-slide="prev">&lsaquo;</a>
-                <a class="carousel-control right" href="#eventCarousel" data-slide="next">&rsaquo;</a>
             </div>
         </div>
     </div>
-</script>
-
-
+</div>
 -------------------------------------------------------------------------------------------------------
+
+
+Besides applying the template and preparing the data that will be used to fill it (the `categories` and `model` entries in the map), this method also performs the JavaScript calls that are required to initialize the UI components (in this case the Twitter Bootstrap carousel and popover).
+
+A view can also listen to events fired by children of it's `el` root element. In this case, the `update` method is set up within the `events` property of the class to listen to clicks on anchors. 
 
 Now that the views are in place, you will need to add a routing rule to the application. We will create a router and add our first routes.
 
-.src/main/webapp/desktop-index.html
+Routing
+~~~~~~~
+
+We will continue by defining a Router which provides linkable, bookmarkable and shareable URLs for the various locations in our application.
+
+.src/main/webapp/resources/js/app/router/desktop/router.js
 [source,js]
 -------------------------------------------------------------------------------------------------------
+/**
+ * A module for the router of the desktop application
+ */
+define("router", [
+    'jquery',
+    'underscore',
+    'backbone',
+    'app/collections/events',
+    'app/views/desktop/events',
+],function ($,
+            _,
+            Backbone,
+            Events,
+            EventsView) {
 
-TicketMonster.Router = Backbone.Router.extend({
-    routes:{
-        "":"events",
-        "events":"events",
-        "events/:id":"eventDetail",
-    },
-    events:function () {
-        var events = new TicketMonster.Events;
-        var eventsView = new TicketMonster.EventsCategoriesView({model:events, el:$("#content")})
-        events.bind("reset",
-                function () {
-                    eventsView.render()
-                }).fetch()
-    }, 
-    eventDetail:function (id) {
-        var model = new TicketMonster.Event({id:id});
-        var eventDetailView = new TicketMonster.EventDetailView({model:model, el:$("#content")});
-        model.bind("change",
-                function () {
-                    eventDetailView.render()
-                }).fetch()
-    }
+    /**
+     * The Router class contains all the routes within the application - 
+     * i.e. URLs and the actions that will be taken as a result.
+     *
+     * @type {Router}
+     */
+
+    var Router = Backbone.Router.extend({
+        routes:{
+            "":"events", // listen to #events
+            "events":"events" // listen to #events
+        },
+        events:function () {
+        	//initialize the events collection
+            var events = new Events(); 
+            // create an events view
+            var eventsView = new EventsView({model:events, el:$("#content")});
+            // render the view when the collection elements are fetched from the
+            // RESTful service
+            events.bind("reset", 
+                function () { 
+                    eventsView.render();
+            }).fetch();
+        });
+
+    // Create a router instance
+    var router = new Router();
+
+    // Begin routing
+    Backbone.history.start();
+
+    return router;
 });
-
-var tmRouter = new TicketMonster.Router;
-
-Backbone.history.start();
 -------------------------------------------------------------------------------------------------------
 
-Remember, this is a single page application. You will be able to navigate using urls such as `http://localhost:8080/ticket-monster/desktop-index.html#events`. The portion after the hash sign represents the url within the page, the one on which the router will act. The `routes` property maps urls to controller function. In the example above, we have two controller functions.
+Remember, this is a single page application. You will be able to navigate either using urls such as `http://localhost:8080/ticket-monster/desktop-index.html#events` or from with relative urls from within the application itself (this being exactly what the main menu does). The portion after the hash sign represents the url within the page, the one on which the router will act. The `routes` property maps urls to controller function. In the example above, we have two controller functions.
 
 `events` handles the `#events` URL and will retrieve the events in our application through a REST call. You don't have to do the REST call yourself, it will be triggered the `fetch` invocation on the `Events` collection (remember our earlier point about mapping collections to REST urls?). The `reset` event on the collection is invoked when the data from the server is received and the collection is populated, and this triggers the rendering of the events view (which is bound to the `#content` div). Notice how the whole process is orchestrated in an event-driven fashion - the models, views and controllers interact through events.
 
-`eventDetails` handles the `#events/:id` URL and will retrieve an individual event, rendering the event detail page, whose structure is shown below. The URL can either be invoked directly by copying it in the URL bar of the browser, or will be navigated from the events menu (see the anchor element which we use for rendering  `EventSummaryLineView`).
+Once the router has been defined, all that remains is to cause is to be loaded by the main module definition. Because the router depends on all the other components (models, collections and views) of the application, directly or indirectly, it will be the only one that is explicitly listed in the `main-desktop` definition, which will change as follows:
 
-.src/main/webapp/desktop-index.html
+.src/main/webapp/resources/js/main-desktop.js
 [source,js]
 -------------------------------------------------------------------------------------------------------
+require.config({
+    paths: {
+        jquery:'libs/jquery-1.7.1',
+        underscore:'libs/underscore',
+        text:'libs/text',
+        order:'libs/order',
+        bootstrap: 'libs/bootstrap',
+        utilities: 'app/utilities',
+        router:'app/router/desktop/router'
+    }
+});
 
-TicketMonster.EventDetailView = Backbone.View.extend({
-    events:{
-        "click input[name='bookButton']":"beginBooking",
-        "change select[id='venueSelector']":"refreshShows",
-        "change select[id='dayPicker']":"refreshTimes"
-    },
-    render:function () {
-        $(this.el).empty()
-        applyTemplate($(this.el), $("#event-detail"), this.model.attributes)
-        $("#bookingOption").hide()
-        $("#venueSelector").attr('disabled', true)
-        $("#dayPicker").empty()
-        $("#dayPicker").attr('disabled', true)
-        $("#performanceTimes").empty()
-        $("#performanceTimes").attr('disabled', true)
-        var self = this
-        $.getJSON("rest/shows?event=" + this.model.get('id'), function (shows) {
-            self.shows = shows
-            $("#venueSelector").empty().append("<option value='0'>Select a venue</option>");
-            $.each(shows, function (i, show) {
-                $("#venueSelector").append("<option value='" + show.id + "'>" + show.venue.address.city + " : " + show.venue.name + "</option>")
-            })
-            $("#venueSelector").removeAttr('disabled')
-            if ($("#venueSelector").val()) {
-                $("#venueSelector").change()
-            }
-        })
-    },
-    beginBooking:function () {
-        tmRouter.navigate('/book/' + $("#venueSelector option:selected").val() + '/' + $("#performanceTimes").val(), true)
-    },
-    refreshShows:function (event) {
-        $("#dayPicker").empty()
+  ...
 
-        var selectedShowId = event.currentTarget.value;
+// Now we declare all the dependencies
+require([
+    'order!jquery', 
+    'order!underscore',
+    'order!backbone',
+    'text',
+    'order!bootstrap',
+    'router'
+], function(){
+    console.log('all loaded')
+});
+-------------------------------------------------------------------------------------------------------
 
-        if (selectedShowId != 0) {
-            var selectedShow = _.find(this.shows, function (show) {
-                return show.id == selectedShowId
-            });
-            this.selectedShow = selectedShow;
-            applyTemplate($("#eventVenueDescription"), $("#event-venue-description"), {venue:selectedShow.venue});
-            var times = _.uniq(_.sortBy(_.map(selectedShow.performances, function (performance) {
-                return (new Date(performance.date).withoutTimeOfDay()).getTime()
-            }), function (item) {
-                return item
-            }));
-            applyTemplate($("#venueMedia"), $("#venue-media"), selectedShow.venue)
-            $("#dayPicker").removeAttr('disabled')
-            $("#performanceTimes").removeAttr('disabled')
-            _.each(times, function (time) {
-                var date = new Date(time)
-                $("#dayPicker").append("<option value='" + date.toYMD() + "'>" + date.toPrettyStringWithoutTime() + "</option>")
-            })
-            this.refreshTimes()
-            $("#bookingWhen").show(100)
-        } else {
-            $("#bookingWhen").hide(100)
-            $("#bookingOption").hide()
-            $("#dayPicker").empty()
-            $("#venueMedia").empty()
-            $("#eventVenueDescription").empty()
+Viewing a single event
+----------------------
+
+With the events list view now in place, we can begin implementing the next step of the use case: adding a view for visualizing the details of an individual event, selecting a venue and a performance time.
+
+We already have the models in place so all we need to do is to create a additional view and expand the router. The view comes first.
+
+.src/main/webapp/resources/js/app/views/desktop/event-detail.js
+[source,js]
+-------------------------------------------------------------------------------------------------------
+define([
+    'backbone',
+    'utilities',
+    'require',
+    'text!../../../../templates/desktop/event-detail.html',
+    'text!../../../../templates/desktop/media.html',
+    'text!../../../../templates/desktop/event-venue-description.html',
+    'bootstrap'
+], function (
+    Backbone,
+    utilities,
+    require,
+    eventDetailTemplate,
+    mediaTemplate,
+    eventVenueDescriptionTemplate) {
+    var EventDetail = Backbone.View.extend({
+        events:{
+            "click input[name='bookButton']":"beginBooking",
+            "change select[id='venueSelector']":"refreshShows",
+            "change select[id='dayPicker']":"refreshTimes"
+        },
+        render:function () {
+            $(this.el).empty()
+            utilities.applyTemplate($(this.el), eventDetailTemplate, this.model.attributes);
+            $("#bookingOption").hide();
+            $("#venueSelector").attr('disabled', true);
+            $("#dayPicker").empty();
             $("#dayPicker").attr('disabled', true)
-            $("#performanceTimes").empty()
+            $("#performanceTimes").empty();
             $("#performanceTimes").attr('disabled', true)
-        }
-
-    },
-    refreshTimes:function () {
-        var selectedDate = $("#dayPicker").val();
-        $("#performanceTimes").empty()
-        if (selectedDate) {
-            $.each(this.selectedShow.performances, function (i, performance) {
-                var performanceDate = new Date(performance.date);
-                if (_.isEqual(performanceDate.toYMD(), selectedDate)) {
-                    $("#performanceTimes").append("<option value='" + performance.id + "'>" + performanceDate.getHours().toZeroPaddedString(2) + ":" + performanceDate.getMinutes().toZeroPaddedString(2) + "</option>")
+            var self = this
+            $.getJSON("rest/shows?event=" + this.model.get('id'), function (shows) {
+                self.shows = shows
+                $("#venueSelector").empty().append("<option value='0'>Select a venue</option>");
+                $.each(shows, function (i, show) {
+                    $("#venueSelector").append("<option value='" + show.id + "'>" 
+                           + show.venue.address.city + " : " + show.venue.name + "</option>")
+                });
+                $("#venueSelector").removeAttr('disabled')
+                if ($("#venueSelector").val()) {
+                    $("#venueSelector").change()
                 }
             })
-        }
-        $("#bookingOption").show()
-    }
+        },
+        beginBooking:function () {
+            require("router").navigate('/book/' + 
+                      $("#venueSelector option:selected").val() + '/' + $("#performanceTimes").val(), true)
+        },
+        refreshShows:function (event) {
+            $("#dayPicker").empty();
 
-});
--------------------------------------------------------------------------------------------------------
+            var selectedShowId = event.currentTarget.value;
 
-The view contains a number of event handlers which respond to user actions on the page. Whenever the user chooses a venue, the show dates will be refreshed. Whenever the user
-chooses a show date, the show times will be refreshed as well.
-
-The associated template of the `EventDetailView` is shown here:
-
-.src/main/webapp/resources/templates/templates.html
--------------------------------------------------------------------------------------------------------
-<script id="event-detail" type="text/template">
-    <div class="row-fluid">
-        <h2 class="page-header"><%=name%></h2>
-    </div>
-    <div class="row-fluid">
-       <div class="span4 well">
-           <div class="row-fluid"><h3 class="page-header span6">What?</h3>
-               <img width="100" src='rest/media/<%=picture.id%>'/></div>
-           <div class="row-fluid">
-               <p>&nbsp;</p>
-               <div class="span12"><%= description %></div></div>
-            <div class="row-fluid">
-
-            </div>
-        </div>
-        <div class="span4 well">
-            <div class="row-fluid"><h3 class="page-header span6">Where?</h3>
-                <div class="span6" id='venueMedia'/></div>
-            <div class='row-fluid'><select id='venueSelector'/>
-            <div id="eventVenueDescription"/></div>
-        </div>
-        <div id='bookingWhen' style="display: none;" class="span2 well">
-            <h3 class="page-header">When?</h3>
-            <select class="span2" id="dayPicker"/>
-            <select  class="span2" id="performanceTimes"/>
-            <div id='bookingOption'><input name="bookButton" class="btn btn-primary" type="button"
-                                           value="Order tickets"></div></div>
-        </div>
-    </div>
-</script>
--------------------------------------------------------------------------------------------------------
-
-In response to clicking on the `bookButton` button, the user will navigate to the next view. Again, we have to add a route in our router. 
-
-.src/main/webapp/desktop-index.html
-[source,js]
--------------------------------------------------------------------------------------------------------
-
-TicketMonster.Router = Backbone.Router.extend({
-    routes:{
-		// other routes
-		"book/:showId/:performanceId":"bookTickets"
-    },
-    // other handlers
-    bookTickets:function (showId, performanceId) {
-        var createBookingView = new TicketMonster.CreateBookingView({model:{showId:showId, performanceId:performanceId, bookingRequest:{tickets:[]}}, el:$("#content")})
-        createBookingView.render()
-    }
-});
-
--------------------------------------------------------------------------------------------------------
-
-The handler function will simply render the 'CreateBookingView' page and initialize its model with an empty booking request.
-
-.src/main/webapp/desktop-index.html
-[source,js]
--------------------------------------------------------------------------------------------------------
-
-TicketMonster.Router = Backbone.Router.extend({
-    routes:{
-		// other routes
-		"book/:showId/:performanceId":"bookTickets"
-    },
-    // other handlers
-    bookTickets:function (showId, performanceId) {
-        var createBookingView = new TicketMonster.CreateBookingView({model:{showId:showId, performanceId:performanceId, bookingRequest:{tickets:[]}}, el:$("#content")})
-        createBookingView.render()
-    }
-});
-
--------------------------------------------------------------------------------------------------------
-
-Next you will need to create `CreateBookingView` and its subviews:
-
-.src/main/webapp/desktop-index.html
-[source,js]
--------------------------------------------------------------------------------------------------------
-
-TicketMonster.CreateBookingView = Backbone.View.extend({
-    events:{
-        "click input[name='submit']":"save",
-        "change select":"refreshPrices",
-        "keyup #email":"updateEmail",
-        "click input[name='add']":"addQuantities",
-        "click i":"updateQuantities"
-    },
-    render:function () {
-
-        var self = this;
-        $.getJSON("rest/shows/" + this.model.showId, function (selectedShow) {
-
-            self.currentPerformance = _.find(selectedShow.performances, function (item) {
-                return item.id == self.model.performanceId
-            });
-            applyTemplate($(self.el), $("#create-booking"), { show:selectedShow,
-                performance:self.currentPerformance});
-            self.selectorView = new TicketMonster.SectionSelectorView({model:selectedShow, el:$("#sectionSelectorPlaceholder")}).render();
-            self.ticketCategoriesView = new TicketMonster.TicketCategoriesView({model:{}, el:$("#ticketCategoriesViewPlaceholder") });
-            self.ticketSummaryView = new TicketMonster.TicketSummaryView({model:self.model, el:$("#ticketSummaryView")});
-            self.show = selectedShow;
-            self.ticketCategoriesView.render();
-            self.ticketSummaryView.render();
-            $("#sectionSelector").change();
-        });
-    },
-    refreshPrices:function (event) {
-        var priceCategories = _.filter(this.show.priceCategories, function (item) {
-            return item.section.id == event.currentTarget.value
-        })
-        var models = new Array()
-        _.each(priceCategories, function (priceCategory) {
-            var model = new TicketMonster.PriceCategoryQuantity()
-            model.set('priceCategory', priceCategory)
-            models.push(model)
-        })
-        this.ticketCategoriesView.model = new TicketMonster.SectionQuantities(models);
-        this.ticketCategoriesView.render();
-    },
-    save:function (event) {
-        var bookingRequest = {ticketRequests:[]};
-        var self = this;
-        bookingRequest.ticketRequests = _.map(this.model.bookingRequest.tickets, function (ticket) {
-            return {priceCategory:ticket.priceCategory.id, quantity:ticket.quantity}
-        });
-        bookingRequest.email = this.model.bookingRequest.email;
-        bookingRequest.performance = this.model.performanceId
-        $.ajax({url:"rest/bookings",
-            data:JSON.stringify(bookingRequest),
-            type:"POST",
-            dataType:"json",
-            contentType:"application/json",
-            success:function (booking) {
-                this.model = {}
-                $.getJSON('rest/shows/performance/' + booking.performance.id, function (retrievedPerformance) {
-                    applyTemplate($(self.el), $("#booking-confirmation"), {booking:booking, performance:retrievedPerformance })
+            if (selectedShowId != 0) {
+                var selectedShow = _.find(this.shows, function (show) {
+                    return show.id == selectedShowId
                 });
-            }}).error(function (error) {
+                this.selectedShow = selectedShow;
+                utilities.applyTemplate($("#eventVenueDescription"), eventVenueDescriptionTemplate, {venue:selectedShow.venue});
+                var times = _.uniq(_.sortBy(_.map(selectedShow.performances, function (performance) {
+                    return (new Date(performance.date).withoutTimeOfDay()).getTime()
+                }), function (item) {
+                    return item
+                }));
+                utilities.applyTemplate($("#venueMedia"), mediaTemplate, selectedShow.venue)
+                $("#dayPicker").removeAttr('disabled')
+                $("#performanceTimes").removeAttr('disabled')
+                _.each(times, function (time) {
+                    var date = new Date(time)
+                    $("#dayPicker").append("<option value='" + date.toYMD() + "'>" 
+                          + date.toPrettyStringWithoutTime() + 
+                          "</option>")
+                })
+                this.refreshTimes()
+                $("#bookingWhen").show(100)
+            } else {
+                $("#bookingWhen").hide(100)
+                $("#bookingOption").hide()
+                $("#dayPicker").empty()
+                $("#venueMedia").empty()
+                $("#eventVenueDescription").empty()
+                $("#dayPicker").attr('disabled', true)
+                $("#performanceTimes").empty()
+                $("#performanceTimes").attr('disabled', true)
+            }
+
+        },
+        refreshTimes:function () {
+            var selectedDate = $("#dayPicker").val();
+            $("#performanceTimes").empty()
+            if (selectedDate) {
+                $.each(this.selectedShow.performances, function (i, performance) {
+                    var performanceDate = new Date(performance.date);
+                    if (_.isEqual(performanceDate.toYMD(), selectedDate)) {
+                        $("#performanceTimes").append("<option value='" + performance.id + "'>" 
+                            + performanceDate.getHours().toZeroPaddedString(2) + ":" + performanceDate.getMinutes().toZeroPaddedString(2) + "</option>")
+                    }
+                })
+            }
+            $("#bookingOption").show()
+        }
+
+    });
+
+    return  EventDetail;
+});
+-------------------------------------------------------------------------------------------------------
+
+This view is already a bit more complex than the global events view. The main reason for that happening is that certain portions of the page need to be updated whenever the user chooses a different venue. 
+
+[[ui-event-detail]]
+.On the event details page some fragments need to be re-rendered when the user changes the venue
+image::gfx/ui-event-details.png[]
+
+The view responds to three different events:
+
+* a of the current venue will trigger a reload of the details and venue image, as well as of the performance times. The application will retrieve the latter information through a RESTful web service;
+* changing the performance day will cause the performance time selector to reload;
+* once the venue and performance time and date have been selected, the user can navigate to the booking page.
+
+The corresponding templates for the three fragments used above are shown below
+
+.src/main/webapp/resources/templates/desktop/event-detail.html
+[source,html]
+-------------------------------------------------------------------------------------------------------
+<div class="row-fluid" xmlns="http://www.w3.org/1999/html">
+    <h2 class="page-header"><%=name%></h2>
+</div>
+<div class="row-fluid">
+    <div class="span4 well">
+        <div class="row-fluid"><h3 class="page-header span6">What?</h3>
+            <img width="100" src='rest/media/<%=mediaItem.id%>'/></div>
+        <div class="row-fluid">
+            <p>&nbsp;</p>
+
+            <div class="span12"><%= description %></div>
+        </div>
+    </div>
+    <div class="span4 well">
+        <div class="row-fluid"><h3 class="page-header span6">Where?</h3>
+            <div class="span6" id='venueMedia'/>
+        </div>
+        <div class='row-fluid'><select id='venueSelector'/>
+            <div id="eventVenueDescription"/>
+        </div>
+    </div>
+    <div id='bookingWhen' style="display: none;" class="span2 well">
+        <h3 class="page-header">When?</h3>
+        <select class="span2" id="dayPicker">
+            <option value="-1">Select a day</option>
+        </select>
+        <select class="span2" id="performanceTimes"/>
+            <option value="-1">Select a time</option>
+        </select>
+
+        <div id='bookingOption'><input name="bookButton" class="btn btn-primary" type="button"
+                                       value="Order tickets"></div>
+    </div>
+</div>
+-------------------------------------------------------------------------------------------------------
+
+.src/main/webapp/resources/templates/desktop/event-venue-description.html
+[source,html]
+-------------------------------------------------------------------------------------------------------
+<address>
+    <p><%= venue.description %></p>
+    <p><strong>Address:</strong></p>
+    <p><%= venue.address.street %></p>
+    <p><%= venue.address.city %>, <%= venue.address.country %></p>
+</address>
+-------------------------------------------------------------------------------------------------------
+
+.src/main/webapp/resources/templates/desktop/event-venue-description.html
+[source,html]
+-------------------------------------------------------------------------------------------------------
+<address>
+    <p><%= venue.description %></p>
+    <p><strong>Address:</strong></p>
+    <p><%= venue.address.street %></p>
+    <p><%= venue.address.city %>, <%= venue.address.country %></p>
+</address>
+-------------------------------------------------------------------------------------------------------
+
+Now that the view has actually been created, we need to add it to the router:
+
+.src/main/webapp/resources/js/app/router/desktop/router.js
+[source,js]
+-------------------------------------------------------------------------------------------------------
+/**
+ * A module for the router of the desktop application
+ */
+define("router", [
+    ...
+    'app/models/event',
+	...,
+    'app/views/desktop/event-detail'
+],function (
+			...
+            Event,
+            ...
+            EventDetailView) {
+
+    var Router = Backbone.Router.extend({
+        routes:{
+            ...
+            "events/:id":"eventDetail",
+        },
+        ...
+        eventDetail:function (id) {
+            var model = new Event({id:id});
+            var eventDetailView = new EventDetailView({model:model, el:$("#content")});
+            model.bind("change",
+                function () {
+                    eventDetailView.render();
+                }).fetch();
+        });
+});
+-------------------------------------------------------------------------------------------------------
+
+As you can see, this is extremely similar to the previous view and route, except that right now the application can also navigate routes such as `http://localhost:8080/ticket-monster/desktop-index#events/1`. This can be entered directly in the browser or it can be navigated as a relative path to `#events/1` from within the applicaton, which is what the collapsible events menu above does.
+
+With this in place, all that remains is to implement the final view of this use case, creating the bookings.
+
+Creating Bookings
+-----------------
+
+The user has chosen an event, a venue and a performance time, so the last step in our implementation is creating a booking. Users can select one of the available sections for the show's venue, and once they do so, they will be able to enter a number of tickets for each category available for this show (Adult, Child, etc.) and add them to the current order. Once they do so, a summary view gets updated. Users can also choose to remove tickets from the order. When the order is complete, they can enter the contact information (e-mail address) and can submit it to the server.
+
+First, we will add the new view:
+
+.src/main/webapp/resources/js/app/views/desktop/create-booking.js
+[source,js]
+-------------------------------------------------------------------------------------------------------
+define([
+    'backbone',
+    'utilities',
+    'require',
+    'text!../../../../templates/desktop/booking-confirmation.html',
+    'text!../../../../templates/desktop/create-booking.html',
+    'text!../../../../templates/desktop/ticket-categories.html',
+    'text!../../../../templates/desktop/ticket-summary-view.html',
+    'bootstrap'
+],function (
+    Backbone,
+    utilities,
+    require,
+    bookingConfirmationTemplate,
+    createBookingTemplate,
+    ticketEntriesTemplate,
+    ticketSummaryViewTemplate){
+
+
+    var TicketCategoriesView = Backbone.View.extend({
+        id:'categoriesView',
+        events:{
+            "change input":"onChange"
+        },
+        render:function () {
+            if (this.model != null) {
+                var ticketPrices = _.map(this.model, function (item) {
+                    return item.ticketPrice;
+                });
+                utilities.applyTemplate($(this.el), ticketEntriesTemplate, {ticketPrices:ticketPrices});
+            } else {
+                $(this.el).empty();
+            }
+            return this;
+        },
+        onChange:function (event) {
+            var value = event.currentTarget.value;
+            var ticketPriceId = $(event.currentTarget).data("tm-id");
+            var modifiedModelEntry = _.find(this.model, function(item) { return item.ticketPrice.id == ticketPriceId});
+            if ($.isNumeric(value) && value > 0) {
+                modifiedModelEntry.quantity = parseInt(value);
+            }
+            else {
+                delete modifiedModelEntry.quantity;
+            }
+        }
+    });
+
+    var TicketSummaryView = Backbone.View.extend({
+        tagName:'tr',
+        events:{
+            "click i":"removeEntry"
+        },
+        render:function () {
+            var self = this;
+            utilities.applyTemplate($(this.el), ticketSummaryViewTemplate, this.model.bookingRequest);
+        },
+        removeEntry:function () {
+            this.model.tickets.splice(this.model.index, 1);
+        }
+    });
+
+    var CreateBookingView = Backbone.View.extend({
+
+        events:{
+            "click input[name='submit']":"save",
+            "change select":"refreshPrices",
+            "keyup #email":"updateEmail",
+            "click input[name='add']":"addQuantities",
+            "click i":"updateQuantities"
+        },
+        render:function () {
+
+            var self = this;
+            $.getJSON("rest/shows/" + this.model.showId, function (selectedShow) {
+
+                self.currentPerformance = _.find(selectedShow.performances, function (item) {
+                    return item.id == self.model.performanceId;
+                });
+
+                var id = function (item) {return item.id;};
+                // prepare a list of sections to populate the dropdown
+                var sections = _.uniq(_.sortBy(_.pluck(selectedShow.ticketPrices, 'section'), id), true, id);
+                utilities.applyTemplate($(self.el), createBookingTemplate, {
+                    sections:sections,
+                    show:selectedShow,
+                    performance:self.currentPerformance});
+                self.ticketCategoriesView = new TicketCategoriesView({model:{}, el:$("#ticketCategoriesViewPlaceholder") });
+                self.ticketSummaryView = new TicketSummaryView({model:self.model, el:$("#ticketSummaryView")});
+                self.show = selectedShow;
+                self.ticketCategoriesView.render();
+                self.ticketSummaryView.render();
+                $("#sectionSelector").change();
+            });
+        },
+        refreshPrices:function (event) {
+            var ticketPrices = _.filter(this.show.ticketPrices, function (item) {
+                return item.section.id == event.currentTarget.value;
+            });
+            var ticketPriceInputs = new Array();
+            _.each(ticketPrices, function (ticketPrice) {
+                ticketPriceInputs.push({ticketPrice:ticketPrice});
+            });
+            this.ticketCategoriesView.model = ticketPriceInputs;
+            this.ticketCategoriesView.render();
+        },
+        save:function (event) {
+            var bookingRequest = {ticketRequests:[]};
+            var self = this;
+            bookingRequest.ticketRequests = _.map(this.model.bookingRequest.tickets, function (ticket) {
+                return {ticketPrice:ticket.ticketPrice.id, quantity:ticket.quantity}
+            });
+            bookingRequest.email = this.model.bookingRequest.email;
+            bookingRequest.performance = this.model.performanceId
+            $.ajax({url:"rest/bookings",
+                data:JSON.stringify(bookingRequest),
+                type:"POST",
+                dataType:"json",
+                contentType:"application/json",
+                success:function (booking) {
+                    this.model = {}
+                    $.getJSON('rest/shows/performance/' + booking.performance.id, function (retrievedPerformance) {
+                        utilities.applyTemplate($(self.el), bookingConfirmationTemplate, {booking:booking, performance:retrievedPerformance })
+                    });
+                }}).error(function (error) {
                     if (error.status == 400 || error.status == 409) {
                         var errors = $.parseJSON(error.responseText).errors;
                         _.each(errors, function (errorMessage) {
@@ -590,75 +849,276 @@ TicketMonster.CreateBookingView = Backbone.View.extend({
 
                 })
 
-    },
-    addQuantities:function () {
-        var self = this;
+        },
+        addQuantities:function () {
+            var self = this;
 
-        _.each(this.ticketCategoriesView.model.models, function (model) {
-            if (model.attributes.quantity != undefined) {
-                var found = false
-                _.each(self.model.bookingRequest.tickets, function(ticket) {
-                    if(ticket.priceCategory.id == model.attributes.priceCategory.id) {
-                        ticket.quantity += model.attributes.quantity
-                        found = true;
+            _.each(this.ticketCategoriesView.model, function (model) {
+                if (model.quantity != undefined) {
+                    var found = false;
+                    _.each(self.model.bookingRequest.tickets, function (ticket) {
+                        if (ticket.ticketPrice.id == model.ticketPrice.id) {
+                            ticket.quantity += model.quantity;
+                            found = true;
+                        }
+                    });
+                    if (!found) {
+                        self.model.bookingRequest.tickets.push({ticketPrice:model.ticketPrice, quantity:model.quantity});
                     }
-                });
-                if (!found) {
-                    self.model.bookingRequest.tickets.push({priceCategory:model.attributes.priceCategory, quantity:model.attributes.quantity})
                 }
+            });
+            this.ticketCategoriesView.model = null;
+            $('option:selected', 'select').removeAttr('selected');
+            this.ticketCategoriesView.render();
+            this.updateQuantities();
+        },
+        updateQuantities:function () {
+            // make sure that tickets are sorted by section and ticket category
+            this.model.bookingRequest.tickets.sort(function (t1, t2) {
+                if (t1.ticketPrice.section.id != t2.ticketPrice.section.id) {
+                    return t1.ticketPrice.section.id - t2.ticketPrice.section.id;
+                }
+                else {
+                    return t1.ticketPrice.ticketCategory.id - t2.ticketPrice.ticketCategory.id;
+                }
+            });
+
+            this.model.bookingRequest.totals = _.reduce(this.model.bookingRequest.tickets, function (totals, ticketRequest) {
+                return {
+                    tickets:totals.tickets + ticketRequest.quantity,
+                    price:totals.price + ticketRequest.quantity * ticketRequest.ticketPrice.price
+                };
+            }, {tickets:0, price:0.0});
+
+            this.ticketSummaryView.render();
+            this.setCheckoutStatus();
+        },
+        updateEmail:function (event) {
+            if ($(event.currentTarget).is(':valid')) {
+                this.model.bookingRequest.email = event.currentTarget.value;
+
+            } else {
+                delete this.model.bookingRequest.email;
             }
-        });
-        this.ticketCategoriesView.model = null
-        $('option:selected', 'select').removeAttr('selected')
-        this.ticketCategoriesView.render()
-        this.selectorView.render();
-        this.updateQuantities();
-    },
-    updateQuantities: function() {
-        // make sure that tickets are sorted by section and ticket category
-        this.model.bookingRequest.tickets.sort(function (t1, t2) {
-            if (t1.priceCategory.section.id != t2.priceCategory.section.id) {
-                return t1.priceCategory.section.id - t2.priceCategory.section.id;
+            this.setCheckoutStatus();
+        },
+        setCheckoutStatus:function () {
+            if (this.model.bookingRequest.totals != undefined && this.model.bookingRequest.totals.tickets > 0 && this.model.bookingRequest.email != undefined && this.model.bookingRequest.email != '') {
+                $('input[name="submit"]').removeAttr('disabled');
             }
             else {
-                return t1.priceCategory.ticketCategory.id - t2.priceCategory.ticketCategory.id
+                $('input[name="submit"]').attr('disabled', true);
             }
-        });
-
-        this.model.bookingRequest.totals = _.reduce(this.model.bookingRequest.tickets, function (totals, ticketRequest) {
-            return {
-                tickets:totals.tickets + ticketRequest.quantity,
-                price:totals.price + ticketRequest.quantity * ticketRequest.priceCategory.price
-            };
-        }, {tickets:0, price:0.0});
-
-        this.ticketSummaryView.render();
-        this.setCheckoutStatus()
-    },
-    updateEmail:function (event) {
-        if ($(event.currentTarget).is(':valid')) {
-            this.model.bookingRequest.email = event.currentTarget.value
-
-        } else {
-            delete this.model.bookingRequest.email
         }
-        this.setCheckoutStatus()
-    },
-    setCheckoutStatus:function () {
-        if (this.model.bookingRequest.totals != undefined && this.model.bookingRequest.totals.tickets > 0 && this.model.bookingRequest.email != undefined && this.model.bookingRequest.email != '') {
-            $('input[name="submit"]').removeAttr('disabled')
-        }
-        else {
-            $('input[name="submit"]').attr('disabled', true)
-        }
-    }
+    });
+
+    return CreateBookingView;
 });
 -------------------------------------------------------------------------------------------------------
 
-Do not be, however, overwhelmed by its complexity. Most of it captures the interactions that construct a booking request: the user can repeatedly add and remove tickets to the `bookingRequest` model object or update the e-mail address. 
+The code above may be surprising: after all, we said that we were going to add a single view, but instead, we have added three! The reason is that this view makes use of subviews (`TicketCategoriesView` and `TicketSummaryView`) for re-rendering parts of the main view. Whenever the user changes the current section selection, it will display a list of available tickets, by price category. Whenever the user adds the tickets to the main request, the current summary will be re-rendered. Changes in quantities or the target email may enable or disable the submission button - the booking request data is re-validated in the process. We do not create separate modules for the subviews, since they are not referenced outside the module itself.
 
-The view makes use of subviews (`SectionSelectorView`, `TicketCategoriesView` and `TicketSummaryView`) for re-rendering parts of the main view - whenever the user changes the current section selection, it will display a list of available tickets, by price category. 
+The user submission is handled by the `save` method which constructs the a JSON object in the format required by a POST at `http://localhost:8080/ticket-monster/rest/bookings`, and performs the AJAX call. In case of a successful response, a confirmation view is rendered. On failure, a warning is displayed and the user may continue to edit the form. 
 
-Whenever the user adds the tickets to the main request, the current summary will be re-rendered. Changes in quantities or the target email may enable or disable the submission button - the booking request data is re-validated in the process.
+The corresponding templates for the views above are shown below:
 
-The user submission is handled by the `save` method which constructs the a JSON object in the format required by a POST at `http://localhost:8080/ticket-monster/rest/bookings` and performs the AJAX call. In case of a successful response, a confirmation view is rendered. On failure, a warning is displayed and the user may continue to edit the form.  
+.src/main/webapp/resources/templates/desktop/booking-confirmation.html
+[source,html]
+-------------------------------------------------------------------------------------------------------
+<div class="row-fluid">
+    <h2 class="page-header">Booking #<%=booking.id%> confirmed!</h2>
+</div>
+<div class="row-fluid">
+    <div class="span5 well">
+        <h4 class="page-header">Checkout information</h4>
+        <p><strong>Email: </strong><%= booking.contactEmail %></p>
+        <p><strong>Event: </strong> <%= performance.event.name %></p>
+        <p><strong>Venue: </strong><%= performance.venue.name %></p>
+        <p><strong>Date: </strong><%= new Date(booking.performance.date).toPrettyString() %></p>
+        <p><strong>Created on: </strong><%= new Date(booking.createdOn).toPrettyString() %></p>
+    </div>
+    <div class="span5 well">
+        <h4 class="page-header">Ticket allocations</h4>
+        <table class="table table-striped table-bordered" style="background-color: #fffffa;">
+            <thead>
+            <tr>
+                <th>Ticket #</th>
+                <th>Category</th>
+                <th>Section</th>
+                <th>Row</th>
+                <th>Seat</th>
+            </tr>
+            </thead>
+            <tbody>
+            <% $.each(_.sortBy(booking.tickets, function(ticket) {return ticket.id}), function (i, ticket) { %>
+            <tr>
+                <td><%= ticket.id %></td>
+                <td><%=ticket.ticketCategory.description%></td>
+                <td><%=ticket.seat.section.name%></td>
+                <td><%=ticket.seat.rowNumber%></td>
+                <td><%=ticket.seat.number%></td>
+            </tr>
+            <% }) %>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="row-fluid" style="padding-bottom:30px;">
+    <div class="span2"><a href="#">Home</a></div>
+</div>
+-------------------------------------------------------------------------------------------------------
+
+.src/main/webapp/resources/templates/desktop/create-booking.html
+[source,html]
+-------------------------------------------------------------------------------------------------------
+<div class="row-fluid">
+    <div class="span12">
+        <h2><%=show.event.name%>
+            <small><%=show.venue.name%>, <%=new Date(performance.date).toPrettyString()%></p></small>
+        </h2>
+    </div>
+</div>
+<div class="row-fluid">
+    <div class="span5 well">
+        <h4 class="page-header">Select tickets</h4>
+
+        <div id="sectionSelectorPlaceholder" class="row-fluid">
+            <div class="control-group">
+                <label class="control-label" for="sectionSelect">Section</label>
+                <div class="controls">
+                    <select id="sectionSelect">
+                        <option value="-1" selected="true">Choose a section</option>
+                        <% _.each(sections, function(section) { %>
+                        <option value="<%=section.id%>"><%=section.name%> - <%=section.description%></option>
+                        <% }) %>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div id="ticketCategoriesViewPlaceholder" class="row-fluid"></div>
+    </div>
+    <div id="request-summary" class="span5 offset1 well">
+        <h4 class="page-header">Order summary</h4>
+        <div id="ticketSummaryView" class="row-fluid"/>
+        <h4 class="page-header">Checkout</h4>
+        <div class="row-fluid">
+            <input type='email' id="email" placeholder="Email" required/>
+            <input type='button' class="btn btn-primary" name="submit" value="Checkout"
+                   style="margin-bottom:9px;" disabled="true"/>
+        </div>
+    </div>
+</div>
+-------------------------------------------------------------------------------------------------------
+
+.src/main/webapp/resources/templates/desktop/ticket-categories.html
+[source,html]
+-------------------------------------------------------------------------------------------------------
+<% if (ticketPrices.length > 0) { %>
+<% _.each(ticketPrices, function(ticketPrice) { %>
+<div id="ticket-category-input-<%=ticketPrice.id%>">
+    <div class="control-group">
+        <label class="control-label"><%=ticketPrice.ticketCategory.description%></label>
+
+        <div class="controls">
+            <div class="input-append">
+                <input class="span2" rel="tooltip" title="Enter value" type="number" min="1"
+                                             max="9"
+                                             data-tm-id="<%=ticketPrice.id%>"
+                                             placeholder="Number of tickets"
+                                             name="tickets-<%=ticketPrice.ticketCategory.id%>"/>
+                <span class="add-on" style="margin-bottom:9px">@ $<%=ticketPrice.price%></span>
+            </div>
+        </div>
+    </div>
+</div>
+<% }) %>
+<div class="control-group">
+    <label class="control-label"/>
+    <div class="controls">
+        <input type="button" class="btn btn-primary" name="add" value="Add tickets"/>
+    </div>
+</div>
+<% } %>
+-------------------------------------------------------------------------------------------------------
+
+.src/main/webapp/resources/templates/desktop/ticket-summary-view.html
+[source,html]
+-------------------------------------------------------------------------------------------------------
+<div class="span12">
+    <% if (tickets.length>0) { %>
+    <table class="table table-bordered table-condensed row-fluid" style="background-color: #fffffa;">
+        <thead>
+        <tr>
+            <th colspan="5"><strong>Requested tickets</strong></th>
+        </tr>
+        <tr>
+            <th>Section</th>
+            <th>Category</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody id="ticketRequestSummary">
+        <% _.each(tickets, function (ticketRequest, index, tickets) { %>
+        <tr>
+            <td><%= ticketRequest.ticketPrice.section.name %></td>
+            <td><%= ticketRequest.ticketPrice.ticketCategory.description %></td>
+            <td><%= ticketRequest.quantity %></td>
+            <td>$<%=ticketRequest.ticketPrice.price%></td>
+            <td><i class="icon-trash"/></td>
+        </tr>
+        <% }); %>
+        </tbody>
+    </table>
+    <p/>
+    <div class="row-fluid">
+        <div class="span5"><strong>Total ticket count:</strong> <%= totals.tickets %></div>
+        <div class="span5"><strong>Total price:</strong> $<%=totals.price%></div></div>
+    <% } else { %>
+    No tickets requested.
+    <% } %>
+</div>
+-------------------------------------------------------------------------------------------------------
+
+Finally, once the view is available, we can add it's corresponding routing rule:
+
+.src/main/webapp/resources/js/app/router/desktop/router.js
+[source,js]
+-------------------------------------------------------------------------------------------------------
+/**
+ * A module for the router of the desktop application
+ */
+define("router", [
+    ...
+    'app/views/desktop/create-booking',
+	...
+],function (
+			...
+            CreateBooking
+            ...
+            ) {
+
+    var Router = Backbone.Router.extend({
+        routes:{
+            ...
+            "book/:showId/:performanceId":"bookTickets",
+        },
+        ...
+        bookTickets:function (showId, performanceId) {
+            var createBookingView = 
+            	new CreateBookingView({
+            		model:{ showId:showId, 
+            			    performanceId:performanceId, 
+            			    bookingRequest:{tickets:[]}}, 
+            			    el:$("#content")
+            			   });
+            createBookingView.render();
+        }
+});
+-------------------------------------------------------------------------------------------------------
+
+Mobile view
+-----------
+
+TODO
