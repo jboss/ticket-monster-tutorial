@@ -313,7 +313,7 @@ public class TicketCategory {
 -------------------------------------------------------------------------------------------------------
 
 
-TicketMonster contains another lookup tables, `EventCategory`. It's pretty much identical to `TicketCateory`, so we leave it as an exercise to the reader to investigate, and understand. If you are building the application whilst following this tutorial, copy the source over from the TicketMonster example.
+TicketMonster contains another lookup tables, `EventCategory`. It's pretty much identical to `TicketCategory`, so we leave it as an exercise to the reader to investigate, and understand. If you are building the application whilst following this tutorial, copy the source over from the TicketMonster example.
 
 Database Design & Relationships
 -------------------------------
