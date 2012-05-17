@@ -748,6 +748,11 @@ public class VenueService extends BaseEntityService<Venue> {
 }
 ------------------------------------------------------------------------------------------
 
+In addition to creating a concrete instance of the class, we define this service (along with
+all the other JAX-RS services) as enterprise java beans - in principal to benefit from 
+automatic transaction enrolment. Since the service is fundamentally stateless, we take advantage of
+the new EJB 3.1 singleton feature.
+
 Now, we can retrieve venues from `/rest/venues` and `rest/venues/1` for example.
 
 Retrieving Events
@@ -900,10 +905,7 @@ public class BookingService extends BaseEntityService<Booking> {
 
     @Inject @Created
     private Event<Booking> newBookingEvent;
-    
-    @Inject @Cancelled
-    private Event<Booking> cancelledBookingEvent;
-    
+        
     public BookingService() {
         super(Booking.class);
     }
@@ -1018,33 +1020,62 @@ public class BookingService extends BaseEntityService<Booking> {
             return Response.status(Response.Status.BAD_REQUEST).entity(errors).build();
         }
     }
-
 }
-
 ------------------------------------------------------------------------------------------
 
-We would also like to be able to delete bookings, therefore we will add a corresponding method
-as well:
+We won't get into the details of the inner workings of the method - it implements a 
+fairly complex algorithm - but we'd like to draw attention to a few particular items.
+
+For one thing, you can see that it delegates to the `SeatAllocationService` for the 
+particular task of finding seats in a given section. This is an example of dependency
+injection in action - the required `SeatAllocationService` instance is initialized and supplied by the 
+container as needed. The only thing that our service does is to specify the dependency in form
+of an injection point - the field annotated with `@Inject`.
+
+The other particular aspect of this method is the use of CDI eventing. We would like other
+parts of the application to be aware of the fact that a new booking has been created, therefore
+we use the CDI to fire an event. We do so by injecting an `Event` instance into the 
+service (indicating that its payload will be a booking). In order to individually identify 
+this event as referring to event creation, we will use a specifc CDI qualifier, which you
+will need to add as shown below.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/monitor/client/shared/qualifier/Created.java
+[source, java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.monitor.client.shared.qualifier;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import javax.inject.Qualifier;
+
+/**
+ * {@link Qualifier} to mark a Booking as new (created).
+ * 
+ * @author Christian Sadilek <csadilek@redhat.com>
+ */
+@Qualifier
+@Target({ElementType.FIELD,ElementType.PARAMETER,ElementType.METHOD,ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Created {
+
+}
+------------------------------------------------------------------------------------------
+
+Of course, we would also like to be able to delete bookings, therefore we will add a corresponding method as well:
 
 .src/main/java/org/jboss/jdf/example/ticketmonster/rest/BookingService.java
 [source,java]
 ------------------------------------------------------------------------------------------
 @Singleton
 public class BookingService extends BaseEntityService<Booking> {
-
-    @Inject
-    SeatAllocationService seatAllocationService;
-
-    @Inject @Created
-    private Event<Booking> newBookingEvent;
-    
+	...
+	
     @Inject @Cancelled
     private Event<Booking> cancelledBookingEvent;
-    
-    public BookingService() {
-        super(Booking.class);
-    }
-
+    ...
     /**
      * <p>
      * Delete a booking by id
@@ -1063,8 +1094,429 @@ public class BookingService extends BaseEntityService<Booking> {
         cancelledBookingEvent.fire(booking);
         return Response.ok().build();
     }
-
 }
-
 ------------------------------------------------------------------------------------------
 
+Just as with creation, we would like to notify the other components for the cancellation of a booking as well, so we will fire an event for that too, with its own qualifier.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/monitor/client/shared/qualifier/Cancelled.java
+[source, java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.monitor.client.shared.qualifier;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import javax.inject.Qualifier;
+
+/**
+ * {@link Qualifier} to mark a Booking as cancelled.
+ * 
+ * @author Christian Sadilek <csadilek@redhat.com>
+ */
+@Qualifier
+@Target({ElementType.FIELD,ElementType.PARAMETER,ElementType.METHOD,ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Cancelled {
+
+}
+------------------------------------------------------------------------------------------
+
+The other services, including the `MediaService` that handles media items follow roughly the
+same patterns as above, so we will leave them as an exercise to the reader.
+
+Testing the services
+--------------------
+
+You've finished implementing your services and now you have a significant amount of functionality
+in your application. Before taking any step forward, you need to make sure that they work
+correctly: you need to test them.
+
+Testing enterprise services can become a complex task due to the fact that their implementation
+is based on services provided by a container: dependency injection, access to infrastructure
+services such as persistence, transactions and so on. Unit testing frameworks, while offering
+a valuable infrastructure for running tests, do not provide these capabilities.
+
+One of the traditional approaches has been the use of mocking frameworks for simulating
+'what should happen' in the runtime environment. While certainly providing a solution, to
+some degree, mocking brings in its own set of problems - like the additional effort required
+to provide a proper simulation or the risk of introducing errors in the test suite by improper
+implemented mocks.
+
+Fortunately, Arquillian provides the means to testing your application code within the container,
+with access to all the services and container features. In this section we will show you how 
+to create a few Arquillian tests for your business services.
+
+.What to test?
+******************************************************************************************
+A common asked question is: how much application functionality should you test? The truth is,
+you can never test too much. That being said, resources are always limited and tradeoffs are
+part of an engineer's work. Generally speaking, trivial functionality (setters/getters/toString methods) is not such a big subject of concern as the actual business code, so you may want to
+focus your efforts on the latter. Testing should include individual parts (unit testing), as
+well as aggregates (integration testing).
+*****************************************************************************************
+
+A basic deployment class
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+In order to create Arquillian tests, we will define deployments. Exactly as their name 
+indicates, code under test as well as its dependencies is packaged and deployed in the container, 
+following exactly the same lifecycle as your application.
+
+A lot of our deployment files are common for all tests, so we will create a helper class 
+with a factory method that creates a deployment with all the generic content for us.
+
+.src/test/java/org/jboss/jdf/ticketmonster/test/TicketMonsterDeployment.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.ticketmonster.test;
+
+import org.jboss.jdf.example.ticketmonster.util.Resources;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+
+public class TicketMonsterDeployment {
+
+    public static WebArchive deployment() {
+        return ShrinkWrap
+                .create(WebArchive.class, "test.war")
+                .addPackage(Resources.class.getPackage())
+                .addAsResource("META-INF/test-persistence.xml", "META-INF/persistence.xml")
+                .addAsResource("import.sql")
+                .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
+                // Deploy our test datasource
+                .addAsWebInfResource("test-ds.xml");
+    }
+}
+------------------------------------------------------------------------------------------
+
+While Arquillian does not concern itself with packaging the resources under test, it delegates
+this functionality to its dependent (or sibling) project ShrinkWrap, the API of which it uses -
+Arquillian expects a ShrinkWrap archive as the deployment under test.
+
+Testing RESTful services
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+For testing our JAX-RS RESTful services, we need to add the corresponding class files to 
+the deployment. Since we would have to do that for each test we create, we will abide by the DRY principles and will create a utility class again. 
+
+.src/test/java/org/jboss/jdf/ticketmonster/test/rest/RESTDeployment.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.ticketmonster.test.rest;
+
+import org.jboss.jdf.example.ticketmonster.model.Booking;
+import org.jboss.jdf.example.ticketmonster.rest.BaseEntityService;
+import org.jboss.jdf.example.ticketmonster.service.MediaManager;
+import org.jboss.jdf.example.ticketmonster.service.MediaPath;
+import org.jboss.jdf.example.ticketmonster.service.SeatAllocationService;
+import org.jboss.jdf.ticketmonster.test.TicketMonsterDeployment;
+import org.jboss.jdf.ticketmonster.test.rest.util.MockMultivaluedMap;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+
+public class RESTDeployment {
+
+    public static WebArchive deployment() {
+        return TicketMonsterDeployment.deployment()
+                .addPackage(Booking.class.getPackage())
+                .addPackage(BaseEntityService.class.getPackage())
+                .addPackage(MockMultivaluedMap.class.getPackage())
+                .addClass(SeatAllocationService.class)
+                .addClass(MediaPath.class)
+                .addClass(MediaManager.class);
+    }
+    
+}
+------------------------------------------------------------------------------------------
+
+Once you have done so, you can go and create a first test - validating the proper retrieval of
+an individual event.
+
+.src/test/java/org/jboss/jdf/ticketmonster/test/rest/VenueServiceTest.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.ticketmonster.test.rest;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.ws.rs.core.MultivaluedMap;
+
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.jdf.example.ticketmonster.model.Venue;
+import org.jboss.jdf.example.ticketmonster.rest.VenueService;
+import org.jboss.jdf.ticketmonster.test.rest.util.MockMultivaluedMap;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(Arquillian.class)
+public class VenueServiceTest {
+    
+    @Deployment 
+    public static WebArchive deployment() {
+        return RESTDeployment.deployment();
+    }
+   
+    @Inject 
+    private VenueService venueService;
+    
+    @Test 
+    public void testGetVenueById() {
+        
+        // Test loading a single venue
+        Venue venue = venueService.getSingleInstance(1l);
+        assertNotNull(venue);
+        assertEquals("Roy Thomson Hall", venue.getName());
+    }
+
+}
+------------------------------------------------------------------------------------------
+
+In the class above we have stated what is the deployment under test - the `deployment`, and we have defined a test method. As you can notice, the class is CDI-injected with a `VenueService` instance
+. This is one of the strengths of Arquillian - the ability of injecting tested objects directly into test classes. And, of course, there is a test method (`testGetVenueById`).
+
+As you move on, you can begin testing even more complicated use cases, like for the use of query 
+parameters for pagination.
+
+.src/test/java/org/jboss/jdf/ticketmonster/test/rest/VenueServiceTest.java
+[source,java]
+------------------------------------------------------------------------------------------
+...
+@RunWith(Arquillian.class)
+public class VenueServiceTest {
+    
+    ...
+    
+    @Test
+    public void testPagination() {
+        
+        // Test pagination logic
+        MultivaluedMap<String, String> queryParameters = new MockMultivaluedMap<String, String>();
+        
+        queryParameters.add("first", "2");
+        queryParameters.add("maxResults", "1");
+        
+        List<Venue> venues = venueService.getAll(queryParameters);
+        assertNotNull(venues);
+        assertEquals(1, venues.size());
+        assertEquals("BMO Field", venues.get(0).getName());
+    }
+
+}
+------------------------------------------------------------------------------------------
+
+You will add another method (`testPagination`), which tests the retrieval of all venues, passing the 
+search criteria as parameters. We use a Map to simulate the passing of query parameters in 
+a similar way to which JAX-RS would handle it.
+
+After this, you may want to test some more advanced use cases like the creation of a 
+new booking. So you can do so by adding a new test for bookings.
+
+.src/test/java/org/jboss/jdf/ticketmonster/test/rest/BookingServiceTest.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.ticketmonster.test.rest;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.persistence.NoResultException;
+import javax.ws.rs.core.MultivaluedMap;
+
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.arquillian.junit.InSequence;
+import org.jboss.jdf.example.ticketmonster.model.Booking;
+import org.jboss.jdf.example.ticketmonster.model.Performance;
+import org.jboss.jdf.example.ticketmonster.model.Show;
+import org.jboss.jdf.example.ticketmonster.model.Ticket;
+import org.jboss.jdf.example.ticketmonster.model.TicketPrice;
+import org.jboss.jdf.example.ticketmonster.rest.BookingRequest;
+import org.jboss.jdf.example.ticketmonster.rest.BookingService;
+import org.jboss.jdf.example.ticketmonster.rest.ShowService;
+import org.jboss.jdf.example.ticketmonster.rest.TicketRequest;
+import org.jboss.jdf.ticketmonster.test.rest.util.MockMultivaluedMap;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@RunWith(Arquillian.class)
+public class BookingServiceTest {
+
+    @Deployment
+    public static WebArchive deployment() {
+        return RESTDeployment.deployment();
+    }
+
+    @Inject
+    private BookingService bookingService;
+
+    @Inject
+    private ShowService showService;
+
+    @Test
+    @InSequence(1)
+    public void testCreateBookings() {
+        BookingRequest br = createBookingRequest(1l, 0, 0, 1, 3);
+        bookingService.createBooking(br);
+
+        BookingRequest br2 = createBookingRequest(2l, 1, 2, 4, 9);
+        bookingService.createBooking(br2);
+
+        BookingRequest br3 = createBookingRequest(3l, 0, 0, 1);
+        bookingService.createBooking(br3);
+    }
+    
+    @Test
+    @InSequence(10)
+    public void testGetBookings() {
+        checkBooking1();
+        checkBooking2();
+        checkBooking3();
+    }
+    
+    private void checkBooking1() {
+        Booking booking = bookingService.getSingleInstance(1l);
+        assertNotNull(booking);
+        assertEquals("Roy Thomson Hall", booking.getPerformance().getShow().getVenue().getName());
+        assertEquals("Rock concert of the decade", booking.getPerformance().getShow().getEvent().getName());
+        assertEquals("bob@acme.com", booking.getContactEmail());
+
+        // Test the ticket requests created
+
+        assertEquals(3 + 2 + 1, booking.getTickets().size());
+
+        List<String> requiredTickets = new ArrayList<String>();
+        requiredTickets.add("A @ 219.5 (Adult)");
+        requiredTickets.add("A @ 219.5 (Adult)");
+        requiredTickets.add("D @ 149.5 (Adult)");
+        requiredTickets.add("C @ 179.5 (Adult)");
+        requiredTickets.add("C @ 179.5 (Adult)");
+        requiredTickets.add("C @ 179.5 (Adult)");
+
+        checkTickets(requiredTickets, booking);
+    }
+    
+    private void checkBooking2() {
+        Booking booking = bookingService.getSingleInstance(2l);
+        assertNotNull(booking);
+        assertEquals("Sydney Opera House", booking.getPerformance().getShow().getVenue().getName());
+        assertEquals("Rock concert of the decade", booking.getPerformance().getShow().getEvent().getName());
+        assertEquals("bob@acme.com", booking.getContactEmail());
+
+        assertEquals(3 + 2 + 1, booking.getTickets().size());
+
+        List<String> requiredTickets = new ArrayList<String>();
+        requiredTickets.add("S2 @ 197.75 (Adult)");
+        requiredTickets.add("S6 @ 145.0 (Child 0-14yrs)");
+        requiredTickets.add("S6 @ 145.0 (Child 0-14yrs)");
+        requiredTickets.add("S4 @ 145.0 (Child 0-14yrs)");
+        requiredTickets.add("S6 @ 145.0 (Child 0-14yrs)");
+        requiredTickets.add("S4 @ 145.0 (Child 0-14yrs)");
+
+        checkTickets(requiredTickets, booking);
+    }
+    
+    private void checkBooking3() {
+        Booking booking = bookingService.getSingleInstance(3l);
+        assertNotNull(booking);
+        assertEquals("Roy Thomson Hall", booking.getPerformance().getShow().getVenue().getName());
+        assertEquals("Shane's Sock Puppets", booking.getPerformance().getShow().getEvent().getName());
+        assertEquals("bob@acme.com", booking.getContactEmail());
+
+        assertEquals(2 + 1, booking.getTickets().size());
+
+        List<String> requiredTickets = new ArrayList<String>();
+        requiredTickets.add("B @ 199.5 (Adult)");
+        requiredTickets.add("D @ 149.5 (Adult)");
+        requiredTickets.add("B @ 199.5 (Adult)");
+        
+        checkTickets(requiredTickets, booking);
+    }
+
+    @Test
+    @InSequence(10)
+    public void testPagination() {
+
+        // Test pagination logic
+        MultivaluedMap<String, String> queryParameters = new MockMultivaluedMap<String, String>();
+
+        queryParameters.add("first", "2");
+        queryParameters.add("maxResults", "1");
+
+        List<Booking> bookings = bookingService.getAll(queryParameters);
+        assertNotNull(bookings);
+        assertEquals(1, bookings.size());
+        assertEquals("Roy Thomson Hall", bookings.get(0).getPerformance().getShow().getVenue().getName());
+        assertEquals("Shane's Sock Puppets", bookings.get(0).getPerformance().getShow().getEvent().getName());
+    }
+
+    @Test
+    @InSequence(20)
+    public void testDelete() {
+        bookingService.deleteBooking(2l);
+        checkBooking1();
+        checkBooking3();
+        try {
+            bookingService.getSingleInstance(2l);
+        } catch (Exception e) {
+            if (e.getCause() instanceof NoResultException) {
+                return;
+            }
+        }
+        fail("Expected NoResultException did not occur.");
+    }
+
+    private BookingRequest createBookingRequest(Long showId, int performanceNo, int... ticketPriceNos) {
+        Show show = showService.getSingleInstance(showId);
+
+        Performance performance = new ArrayList<Performance>(show.getPerformances()).get(performanceNo);
+
+        BookingRequest bookingRequest = new BookingRequest(performance, "bob@acme.com");
+
+        List<TicketPrice> possibleTicketPrices = new ArrayList<TicketPrice>(show.getTicketPrices());
+        int i = 1;
+        for (int index : ticketPriceNos) {
+            bookingRequest.addTicketRequest(new TicketRequest(possibleTicketPrices.get(index), i));
+            i++;
+        }
+
+        return bookingRequest;
+    }
+    
+    private void checkTickets(List<String> requiredTickets, Booking booking) {
+        List<String> bookedTickets = new ArrayList<String>();
+        for (Ticket t : booking.getTickets()) {
+            bookedTickets.add(new StringBuilder().append(t.getSeat().getSection()).append(" @ ").append(t.getPrice()).append(" (").append(t.getTicketCategory()).append(")").toString());
+        }
+        System.out.println(bookedTickets);
+        for (String requiredTicket : requiredTickets) {
+            Assert.assertTrue("Required ticket not present: " + requiredTicket, bookedTickets.contains(requiredTicket));
+        }
+    }
+
+}
+------------------------------------------------------------------------------------------
+
+The class above contains a more advanced use case: first we test booking creation in a test method
+of its own (`testCreateBookings`). Then, we test that the previously created bookings
+are retrieved correctly (`testGetBookings` and `testPagination`). Finally, we are testing that
+deletion takes place correctly (`testDelete`).
+
+The other tests in the application follow roughly the same pattern and are left as an exercise to the
+reader.
