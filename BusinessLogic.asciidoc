@@ -6,11 +6,1065 @@ Learn how to design and implement the business layer of an application and how t
 
 You've just defined the domain model of your application and created its persistence layer. Now you need to implement the services that implement the business logic of your application and expose them to the front-end. After reading this, you'll understand how to design the business layer and what choices to make while developing it. Topics covered include:
 
-* Implementing basic persistence operations (?)
 * Encapsulating business logic in services and integrating with the persistence tier
 * Using CDI for integrating individual services
 * Integration testing using Arquillian
-* Implementing cross-cutting concerns such as logging
 * Exposing RESTful services via JAX-RS
 
 The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through. For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
+
+Business services and their relationships
+------------------------------------------
+
+Ticket Monster uses a number of service classes, which incorporate business logic which serves
+different purposes:
+
+* managing media items;
+* allocating tickets;
+* handling information on ticket availability;
+* remote access through a RESTful interface.
+
+The services are consumed by various other layers of the application: 
+
+* RESTful services are mainly used by the POH5 user interface;
+* the media management and ticket allocation services are encapsulating complex functionality
+exposed externally by the RESTful service;
+* the ticket availability service is used by the Errai-based user interface.
+
+.Where to draw the line?
+******************************************************************************************
+A business service is an encapsulated, reusable logical component that groups together a 
+number of well-defined cohesive business operations. Business services perform business calculations, and may coordinate infrastructure services such as persistence units, or even other business services as well. The decision of drawing boundaries between them should take into account 
+whether the newly created service really represent standalone, potentially reusable components.
+******************************************************************************************
+
+As you can see, some of the services are intended to be consumed within the business layer
+of the application, while others are exposing parts of the application as JAX-RS RESTful 
+services. We will start by implementing the former, and we will finish up with the latter.
+During this process, you will discover how CDI makes it easy to define and wire together
+services.
+
+Preparations
+------------
+
+The first step for setting up our service architecture is to enable CDI in the deployment. 
+You can simply do so by creating a `beans.xml` file in the `WEB-INF` folder of your web
+application.
+
+.src/main/webapp/WEB-INF/beans.xml
+[source,xml]
+------------------------------------------------------------------------------------------
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This file can be an empty text file (0 bytes) -->
+<!-- We're declaring the schema to save you time if you do have to configure 
+   this in the future -->
+<beans xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="
+        http://java.sun.com/xml/ns/javaee 
+        http://java.sun.com/xml/ns/javaee/beans_1_0.xsd">
+</beans>
+------------------------------------------------------------------------------------------
+
+
+.Contexts and Dependency Injection (CDI)
+******************************************************************************************
+As it's name suggests, CDI is the contexts and dependency injection standard for Java EE.
+It's goal is to bring the various parts of the application together, by defining a set of
+component management and injection services for Java EE applications. By enabling CDI in 
+your application, your deployment classes become managed components the lifecycle and assembly
+of whom becomes the responsibility of the Java EE server. 
+
+Reducing coupling is a critical goal for a truly decoupled architecture. You can focus now on implementing the specific responsibilities of each component and  describing their dependencies in a declarative fashion, and the runtime will do the rest for you: instantiating, destroying them and wiring them toghether!
+******************************************************************************************
+
+The MediaManager
+----------------
+
+The `MediaManager` is a good illustration of a business service, because
+it encapsulates the retrieval and caching of media objects, abstracting that from the rest of 
+the application.
+
+We will begin by adding the implementation class:
+.src/main/java/org/jboss/jdf/example/ticketmonster/service/MediaManager.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.service;
+
+import static org.jboss.jdf.example.ticketmonster.model.MediaType.IMAGE;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.jboss.jdf.example.ticketmonster.model.MediaItem;
+import org.jboss.jdf.example.ticketmonster.model.MediaType;
+import org.jboss.jdf.example.ticketmonster.util.Base64;
+import org.jboss.jdf.example.ticketmonster.util.Reflections;
+
+/**
+ * <p>
+ * The media manager is responsible for taking a media item, and returning either the URL of the cached version (if the
+ * application cannot load the item from the URL), or the original URL.
+ * </p>
+ * 
+ * <p>
+ * The media manager also transparently caches the media items on first load.
+ * </p>
+ * 
+ * <p>
+ * The computed URLs are cached for the duration of a request. This provides a good balance between consuming heap space, and
+ * computational time.
+ * </p>
+ * 
+ * @author Pete Muir
+ * 
+ */
+public class MediaManager {
+
+    /**
+     * Locate the tmp directory for the machine
+     */
+    private static final File tmpDir;
+
+    static {
+        tmpDir = new File(System.getProperty("java.io.tmpdir"), "org.jboss.jdf.examples.ticket-monster");
+        if (tmpDir.exists()) {
+            if (tmpDir.isFile())
+                throw new IllegalStateException(tmpDir.getAbsolutePath() + " already exists, and is a file. Remove it.");
+        } else {
+            tmpDir.mkdir();
+        }
+    }
+
+    /**
+     * A request scoped cache of computed URLs of media items.
+     */
+    private final Map<MediaItem, MediaPath> cache;
+
+    public MediaManager() {
+
+        this.cache = new HashMap<MediaItem, MediaPath>();
+    }
+
+    /**
+     * Load a cached file by name
+     * 
+     * @param fileName
+     * @return
+     */
+    public File getCachedFile(String fileName) {
+        return new File(tmpDir, fileName);
+    }
+
+    /**
+     * Obtain the URL of the media item. If the URL h has already been computed in this request, it will be looked up in the
+     * request scoped cache, otherwise it will be computed, and placed in the request scoped cache.
+     */
+    public MediaPath getPath(MediaItem mediaItem) {
+        if (cache.containsKey(mediaItem)) {
+            return cache.get(mediaItem);
+        } else {
+            MediaPath mediaPath = createPath(mediaItem);
+            cache.put(mediaItem, mediaPath);
+            return mediaPath;
+        }
+    }
+
+    /**
+     * Compute the URL to a media item. If the media item is not cacheable, then, as long as the resource can be loaded, the
+     * original URL is returned. If the resource is not available, then a placeholder image replaces it. If the media item is
+     * cachable, it is first cached in the tmp directory, and then path to load it is returned.
+     */
+    private MediaPath createPath(MediaItem mediaItem) {
+        if (!mediaItem.getMediaType().isCacheable()) {
+            if (checkResourceAvailable(mediaItem)) {
+                return new MediaPath(mediaItem.getUrl(), false, mediaItem.getMediaType());
+            } else {
+                return createCachedMedia(Reflections.getResource("not_available.jpg").toExternalForm(), IMAGE);
+            }
+        } else {
+            return createCachedMedia(mediaItem);
+        }
+    }
+
+    /**
+     * Check if a media item can be loaded from it's URL, using the JDK URLConnection classes.
+     */
+    private boolean checkResourceAvailable(MediaItem mediaItem) {
+        URL url = null;
+        try {
+            url = new URL(mediaItem.getUrl());
+        } catch (MalformedURLException e) {
+        }
+
+        if (url != null) {
+            try {
+                URLConnection connection = url.openConnection();
+                if (connection instanceof HttpURLConnection) {
+                    return ((HttpURLConnection) connection).getResponseCode() == HttpURLConnection.HTTP_OK;
+                } else {
+                    return connection.getContentLength() > 0;
+                }
+            } catch (IOException e) {
+            }
+        }
+        return false;
+    }
+
+    /**
+     * The cached file name is a base64 encoded version of the URL. This means we don't need to maintain a database of cached
+     * files.
+     */
+    private String getCachedFileName(String url) {
+        return Base64.encodeToString(url.getBytes(), false);
+    }
+
+    /**
+     * Check to see if the file is already cached.
+     */
+    private boolean alreadyCached(String cachedFileName) {
+        File cache = getCachedFile(cachedFileName);
+        if (cache.exists()) {
+            if (cache.isDirectory()) {
+                throw new IllegalStateException(cache.getAbsolutePath() + " already exists, and is a directory. Remove it.");
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * To cache a media item we first load it from the net, then write it to disk.
+     */
+    private MediaPath createCachedMedia(String url, MediaType mediaType) {
+        String cachedFileName = getCachedFileName(url);
+        if (!alreadyCached(cachedFileName)) {
+            URL _url = null;
+            try {
+                _url = new URL(url);
+            } catch (MalformedURLException e) {
+                throw new IllegalStateException("Error reading URL " + url);
+            }
+
+            try {
+                InputStream is = null;
+                OutputStream os = null;
+                try {
+                    is = new BufferedInputStream(_url.openStream());
+                    os = new BufferedOutputStream(getCachedOutputStream(cachedFileName));
+                    while (true) {
+                        int data = is.read();
+                        if (data == -1)
+                            break;
+                        os.write(data);
+                    }
+                } finally {
+                    if (is != null)
+                        is.close();
+                    if (os != null)
+                        os.close();
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException("Error caching " + mediaType.getDescription(), e);
+            }
+        }
+        return new MediaPath(cachedFileName, true, mediaType);
+    }
+
+    private MediaPath createCachedMedia(MediaItem mediaItem) {
+        return createCachedMedia(mediaItem.getUrl(), mediaItem.getMediaType());
+    }
+
+    private OutputStream getCachedOutputStream(String fileName) {
+        try {
+            return new FileOutputStream(getCachedFile(fileName));
+        } catch (FileNotFoundException e) {
+            throw new IllegalStateException("Error creating cached file", e);
+        }
+    }
+
+}
+------------------------------------------------------------------------------------------
+
+This service will convert the `MediaItem` entities defined in the  persistence tutorial into `MediaPath` handles, that can be used by the application to retrieve the actual binary data of the media item. The process involves retrieving and caching the data locally in the filesystem. `MediaPath` is a simple data holding object.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/service/MediaPath.java
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.service;
+
+import org.jboss.jdf.example.ticketmonster.model.MediaType;
+
+public class MediaPath {
+    
+    private final String url;
+    private final boolean cached;
+    private final MediaType mediaType;
+    
+    public MediaPath(String url, boolean cached, MediaType mediaType) {
+        this.url = url;
+        this.cached = cached;
+        this.mediaType = mediaType;
+    }
+    
+    public String getUrl() {
+        return url;
+    }
+    
+    public boolean isCached() {
+        return cached;
+    }
+    
+    public MediaType getMediaType() {
+        return mediaType;
+    }
+
+}
+------------------------------------------------------------------------------------------
+
+Before finishing the implementation of the service, we need to do a couple more things.
+As a managed bean, the service can be injected by type in the components that depend on it.
+However, in order to make it available to the JSF layer as well, we need to make it accessible
+by name - so we will add a `@Named` annotation on it, which in this case will ensure that 
+the bean can be referenced under the name `mediaManager`.
+
+Also, we need to control the lifecycle of this service. Due to the fact that this is a 
+bean that stores request-specific state, we would like for an instance of
+the service to exists exactly for the duration of a web request - therefore we will add an
+annotation indicating just that.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/service/MediaManager.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.service;
+
+import javax.enterprise.context.RequestScoped;
+import javax.inject.Named;
+...
+@Named
+@RequestScoped
+public class MediaManager {
+...
+}
+------------------------------------------------------------------------------------------
+
+The seat allocation service
+---------------------------
+
+The next service is used for finding free seats at booking time in a given section at a 
+given performance. It is a good example of how a service can coordinate infrastructure
+services (using the injected persistence unit to get access to the `ServiceAllocation`
+instance) and domain objects (by invoking the `allocateSeats` method on a concrete
+allocation instance).
+
+Isolating this functionality in a service class makes it possible to write simpler,
+self-explanatory code in the layers above and opens the possibility of replacing this
+code at a later date with a more advanced implementation (for example one using an 
+in-memory cache).
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/service/SeatAllocationService.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.service;
+
+import java.io.Serializable;
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
+
+import org.jboss.jdf.example.ticketmonster.model.Performance;
+import org.jboss.jdf.example.ticketmonster.model.Seat;
+import org.jboss.jdf.example.ticketmonster.model.Section;
+import org.jboss.jdf.example.ticketmonster.model.SectionAllocation;
+
+/**
+ * @author Marius Bogoevici
+ */
+@SuppressWarnings("serial")
+public class SeatAllocationService implements Serializable {
+
+    @Inject
+    EntityManager entityManager;
+
+    public List<Seat> allocateSeats(Section section, Performance performance, int seatCount, boolean contiguous) {
+        SectionAllocation sectionAllocation = retrieveSectionAllocation(section, performance);
+        return sectionAllocation.allocateSeats(seatCount, contiguous);
+    }
+
+    private SectionAllocation retrieveSectionAllocation(Section section, Performance performance) {
+        SectionAllocation sectionAllocationStatus;
+        try {
+            sectionAllocationStatus = (SectionAllocation) entityManager.createQuery("select s from SectionAllocation s where s.performance.id = :performanceId and " +
+                    " s.section.id = :sectionId").setParameter("performanceId", performance.getId()).setParameter("sectionId", section.getId()).getSingleResult();
+        } catch (NoResultException e) {
+            sectionAllocationStatus = new SectionAllocation(performance, section);
+            entityManager.persist(sectionAllocationStatus);
+        }
+        return sectionAllocationStatus;
+    }
+}
+------------------------------------------------------------------------------------------
+
+The booking monitor service
+---------------------------
+
+The last internal service that you will develop in your application provides informations
+about the current shows and their ticket availability status. It bears the Errai-specific
+`@Service` annotation, indicating that it will exposed through a dedicated RPC 
+mechanism for being accessed remotely by the Errai layer.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/service/BookingMonitorServiceImpl.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.service;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
+
+import org.jboss.errai.bus.server.annotations.Service;
+import org.jboss.jdf.example.ticketmonster.monitor.client.shared.BookingMonitorService;
+import org.jboss.jdf.example.ticketmonster.model.Show;
+
+/**
+ * Implementation of {@link BookingMonitorService}.
+ * 
+ * Errai's @Service annotation exposes this service as an RPC endpoint.
+ * 
+ * @author Christian Sadilek <csadilek@redhat.com>
+ */
+@ApplicationScoped 
+@Service
+@SuppressWarnings("unchecked")
+public class BookingMonitorServiceImpl implements BookingMonitorService {
+
+    @Inject
+    private EntityManager entityManager;
+
+    @Override
+    public List<Show> retrieveShows() {
+        Query showQuery = entityManager.createQuery(
+            "select DISTINCT s from Show s JOIN s.performances p WHERE p.date > current_timestamp");
+        return showQuery.getResultList();
+    }
+
+    @Override
+    public Map<Long, Long> retrieveOccupiedCounts() {
+        Map <Long, Long> occupiedCounts = new HashMap<Long, Long>();
+  
+        Query occupiedCountsQuery = entityManager.createQuery("" +
+            		"select s.performance.id, SUM(s.occupiedCount) from SectionAllocation s " +
+            		"WHERE s.performance.date > current_timestamp GROUP BY s.performance.id");
+        
+        List<Object[]> results = occupiedCountsQuery.getResultList();
+        for (Object[] result : results) {
+            occupiedCounts.put((Long) result[0], (Long) result[1]); 
+        }
+        
+        return occupiedCounts;
+    }
+}
+------------------------------------------------------------------------------------------
+
+This service implements a dedicated interface (`BookingMonitorService`). Having a
+service implement an interface is a requirement of Errai.
+
+.Implement an interface or not?
+******************************************************************************************
+You will find yourself very often facing a dilemma: add an interface to a service or not?
+As you saw, most of the services in Ticket Monster do not implement one, except wherever
+it is a requirement of the framework in use (e.g. Errai in this case). In Java EE 6 the requirements for business services to implement interfaces have been relaxed significantly, therefore unless there are valid reasons for creating an abstraction (such as multiple possible implementations), we skipped adding interfaces to our services.
+******************************************************************************************
+
+RESTful services
+----------------
+
+The largest group of services in the application is the one that contains the JAX-RS 
+RESTful web services. They are critical part of our design, since they are the main
+interface of communication with the POH5 layer, and perform various operations varying
+from simple CRUD to processing bookings and media items. 
+
+We use JSON as the data marshalling format, as it is less verbose and easier to process 
+than XML by the JavaScript client-side framework.
+
+Initializing JAX-RS
+~~~~~~~~~~~~~~~~~~~
+
+The first step in their implementation is activating JAX-RS, so that we don't have to write
+any configuration file. By adding the class below, we instruct the container to look for JAX-RS annotated classes and install them as endpoints.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/rest/JaxRsActivator.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.rest;
+
+import javax.ws.rs.ApplicationPath;
+import javax.ws.rs.core.Application;
+
+/**
+ * A class extending {@link Application} and annotated with @ApplicationPath is the Java EE 6
+ * "no XML" approach to activating JAX-RS.
+ * 
+ * <p>
+ * Resources are served relative to the servlet path specified in the {@link ApplicationPath}
+ * annotation.
+ * </p>
+ */
+@ApplicationPath("/rest")
+public class JaxRsActivator extends Application {
+   /* class body intentionally left blank */
+}
+------------------------------------------------------------------------------------------
+
+So, all our JAX-RS services will be mapped relative to the `/rest` path.
+
+A base service for read operations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A significant number of our JAX-RS service have in common the fact that they read data:
+lists of entities or individual entity values (this is the case for events, venues and
+bookings for example). So instead of copying over the implementation into each individual
+service we will create a base service class.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/rest/BaseEntityService.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.rest;
+
+import java.util.List;
+
+import javax.inject.Inject;
+import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.UriInfo;
+
+/**
+ * <p>
+ *   A number of RESTful services implement GET operations on a particular type of entity. For
+ *   observing the DRY principle, the generic operations are implemented in the <code>BaseEntityService</code>
+ *   class, and the other services can inherit from here.
+ * </p>
+ *
+ * <p>
+ *    Subclasses will declare a base path using the JAX-RS {@link Path} annotation, for example:
+ * </p>
+ *
+ * <pre>
+ * <code>
+ * &#064;Path("/widgets")
+ * public class WidgetService extends BaseEntityService<Widget> {
+ * ...
+ * }
+ * </code>
+ * </pre>
+ *
+ * <p>
+ *   will support the following methods:
+ * </p>
+ *
+ * <pre>
+ * <code>
+ *   GET /widgets
+ *   GET /widgets/:id
+ * </code>
+ * </pre>
+ *
+ *  <p>
+ *     Subclasses may specify various criteria for filtering entities when retrieving a list of them, by supporting
+ *     custom query parameters. Pagination is supported by default through the query parameters <code>first</code>
+ *     and <code>maxResults</code>.
+ * </p>
+ *
+ * <p>
+ *     The class is abstract because it is not intended to be used directly, but subclassed by actual JAX-RS
+ *     endpoints.
+ * </p>
+ *
+
+ * @author Marius Bogoevici
+ */
+public abstract class BaseEntityService<T> {
+
+    @Inject
+    private EntityManager entityManager;
+
+    private Class<T> entityClass;
+
+    public BaseEntityService() {}
+    
+    public BaseEntityService(Class<T> entityClass) {
+        this.entityClass = entityClass;
+    }
+
+    public EntityManager getEntityManager() {
+        return entityManager;
+    }
+
+    /**
+     * <p>
+     *   A method for retrieving all entities of a given type. Supports the query parameters <code>first</code>
+     *   and <code>maxResults</code> for pagination.
+     * </p>
+     *
+     * @param uriInfo application and request context information (see {@see UriInfo} class information for more details)
+     * @return
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public List<T> getAll(@Context UriInfo uriInfo) {
+        return getAll(uriInfo.getQueryParameters());
+    }
+    
+    public List<T> getAll(MultivaluedMap<String, String> queryParameters) {
+        final CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+        final CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(entityClass);
+        Root<T> root = criteriaQuery.from(entityClass);
+        Predicate[] predicates = extractPredicates(queryParameters, criteriaBuilder, root);
+        criteriaQuery.select(criteriaQuery.getSelection()).where(predicates);
+        
+        TypedQuery<T> query = entityManager.createQuery(criteriaQuery);
+        if (queryParameters.containsKey("first")) {
+        	Integer firstRecord = Integer.parseInt(queryParameters.getFirst("first"));
+        	query.setFirstResult(firstRecord);
+        }
+        if (queryParameters.containsKey("maxResults")) {
+        	Integer maxResults = Integer.parseInt(queryParameters.getFirst("maxResults"));
+        	query.setMaxResults(maxResults);
+        }
+		return query.getResultList();
+    }
+
+    /**
+     * <p>
+     *     Subclasses may choose to expand the set of supported query parameters (for adding more filtering
+     *     criteria) by overriding this method.
+     * </p>
+     * @param queryParameters - the HTTP query parameters received by the endpoint
+     * @param criteriaBuilder - @{link CriteriaBuilder} used by the invoker
+     * @param root  @{link Root} used by the invoker
+     * @return a list of {@link Predicate}s that will added as query parameters
+     */
+    protected Predicate[] extractPredicates(MultivaluedMap<String, String> queryParameters, CriteriaBuilder criteriaBuilder, Root<T> root) {
+        return new Predicate[]{};
+    }
+
+    /**
+     * <p>
+     *     A method for retrieving individual entity instances.
+     * </p>
+     * @param id entity id
+     * @return
+     */
+    @GET
+    @Path("/{id:[0-9][0-9]*}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public T getSingleInstance(@PathParam("id") Long id) {
+        final CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+        final CriteriaQuery<T> criteriaQuery = criteriaBuilder.createQuery(entityClass);
+        Root<T> root = criteriaQuery.from(entityClass);
+        Predicate condition = criteriaBuilder.equal(root.get("id"), id);
+        criteriaQuery.select(criteriaBuilder.createQuery(entityClass).getSelection()).where(condition);
+        return entityManager.createQuery(criteriaQuery).getSingleResult();
+    }
+}
+------------------------------------------------------------------------------------------
+
+This is not a true JAX-RS endpoint. It is an abstract class and it is not mapped to any
+path.  However, classes that extend it get two operations for free:
+
+* `GET /rest/<entityRoot>` - which retrieves all entities of a given type;
+* `GET /rest/<entityRoot>/<id>` - which retrieves an entity with a given id.
+
+In addition to that, implementors can override the `extractPredicates` method and add
+their own support for additional query parameters, which can be used as filter criteria
+on `GET /rest/<entityRoot>`.
+
+Retrieving Venues
+-----------------
+
+Adding support for retrieving venues is extremely simple. All you need to do is to extend
+the base class, passing the entity type to the superclass constructor.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/rest/VenueService.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.rest;
+
+import javax.ejb.Singleton;
+import javax.ws.rs.Path;
+
+import org.jboss.jdf.example.ticketmonster.model.Venue;
+
+/**
+ * <p>
+ *     A JAX-RS endpoint for handling {@link Venue}s. Inherits the actual
+ *     methods from {@link BaseEntityService}.
+ * </p>
+ *
+ * @author Marius Bogoevici
+ */
+@Path("/venues")
+/**
+ * <p>
+ *     This is a stateless service, so a single shared instance can be used in this case.
+ * </p>
+ */
+@Singleton
+public class VenueService extends BaseEntityService<Venue> {
+
+    public VenueService() {
+        super(Venue.class);
+    }
+
+}
+------------------------------------------------------------------------------------------
+
+Now, we can retrieve venues from `/rest/venues` and `rest/venues/1` for example.
+
+Retrieving Events
+------------------
+
+Just like `VenueService`, `EventService` is a direct subclass of `BaseEntityService` with 
+the added twist that it supports querying events by category. So we can use urls like
+`/rest/events?category=1` to retrieve all concerts, for example.
+
+As we mentioned earlier, this is simply done by extending the `extractPredicates` method
+to handle the query parameters, as we do in this case with `category`.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/rest/EventService.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.rest;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.ejb.Singleton;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.MultivaluedMap;
+
+import org.jboss.jdf.example.ticketmonster.model.Event;
+
+/**
+ * <p>
+ *     A JAX-RS endpoint for handling {@link Event}s. Inherits the actual
+ *     methods from {@link BaseEntityService}, but implements additional search
+ *     criteria.
+ * </p>
+ *
+ * @author Marius Bogoevici
+ */
+@Path("/events")
+/**
+ * <p>
+ *     This is a stateless service, so a single shared instance can be used in this case.
+ * </p>
+ */
+@Singleton
+public class EventService extends BaseEntityService<Event> {
+
+    public EventService() {
+        super(Event.class);
+    }
+
+    /**
+     * <p>
+     *    We override the method from parent in order to add support for additional search
+     *    criteria for events.
+     * </p>
+     * @param queryParameters - the HTTP query parameters received by the endpoint
+     * @param criteriaBuilder - @{link CriteriaBuilder} used by the invoker
+     * @param root  @{link Root} used by the invoker
+     * @return
+     */
+    @Override
+    protected Predicate[] extractPredicates(
+            MultivaluedMap<String, String> queryParameters, 
+            CriteriaBuilder criteriaBuilder, 
+            Root<Event> root) {
+        List<Predicate> predicates = new ArrayList<Predicate>() ;
+        
+        if (queryParameters.containsKey("category")) {
+            String category = queryParameters.getFirst("category");
+            predicates.add(criteriaBuilder.equal(root.get("category").get("id"), category));
+        }
+        
+        return predicates.toArray(new Predicate[]{});
+    }
+}
+------------------------------------------------------------------------------------------
+
+The `ShowService` and `BookingService` follow the same pattern and we will leave its implementation as an exercise to the reader (knowing that its contents can always be copied over to the appropriate folder).
+
+Of course, we want to do more with our services, so we will go beyond reading data. We want to create
+and delete bookings as well.
+
+Creating and deleting bookings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For creating bookings, we will implement a new metod, which handles `POST` requests to
+`/rest/bookings`. Please note that this is not a simple CRUD method. The client does not
+send a booking, but a booking request. It is the responsibility of the service to process
+the request, reserve the seats and return the full booking details to the invoker.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/rest/BookingService.java
+[source,java]
+------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.rest;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.ejb.Singleton;
+import javax.enterprise.event.Event;
+import javax.inject.Inject;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+import org.jboss.jdf.example.ticketmonster.monitor.client.shared.qualifier.Cancelled;
+import org.jboss.jdf.example.ticketmonster.monitor.client.shared.qualifier.Created;
+import org.jboss.jdf.example.ticketmonster.model.Booking;
+import org.jboss.jdf.example.ticketmonster.model.Performance;
+import org.jboss.jdf.example.ticketmonster.model.Seat;
+import org.jboss.jdf.example.ticketmonster.model.Section;
+import org.jboss.jdf.example.ticketmonster.model.Ticket;
+import org.jboss.jdf.example.ticketmonster.model.TicketCategory;
+import org.jboss.jdf.example.ticketmonster.model.TicketPrice;
+import org.jboss.jdf.example.ticketmonster.service.SeatAllocationService;
+
+/**
+ * <p>
+ *     A JAX-RS endpoint for handling {@link Booking}s. Inherits the GET
+ *     methods from {@link BaseEntityService}, and implements additional REST methods.
+ * </p>
+ *
+ * @author Marius Bogoevici
+ * @author Pete Muir
+ */
+@Path("/bookings")
+/**
+ * <p>
+ *     This is a stateless service, so a single shared instance can be used in this case.
+ * </p>
+ */
+@Singleton
+public class BookingService extends BaseEntityService<Booking> {
+
+    @Inject
+    SeatAllocationService seatAllocationService;
+
+    @Inject @Created
+    private Event<Booking> newBookingEvent;
+    
+    @Inject @Cancelled
+    private Event<Booking> cancelledBookingEvent;
+    
+    public BookingService() {
+        super(Booking.class);
+    }
+    
+    /**
+     * <p>
+     *   Create a booking. Data is contained in the bookingRequest object
+     * </p>
+     * @param bookingRequest
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    @POST
+    /**
+     * <p> Data is received in JSON format. For easy handling, it will be unmarshalled in the support
+     * {@link BookingRequest} class.
+     */
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response createBooking(BookingRequest bookingRequest) {
+        try {
+            // First, validate the posted data
+            // There will be more validation when persistence occurs
+
+        	Set<Long> TicketPrices = new HashSet<Long>();
+            for (TicketRequest ticketRequest : bookingRequest.getTicketRequests()) {
+                if (TicketPrices.contains(ticketRequest.getTicketPrice())) {
+                    throw new RuntimeException("Duplicate price category id");
+                }
+                TicketPrices.add(ticketRequest.getTicketPrice());
+            }
+
+            // First, load the entities that make up this booking's relationships
+            Performance performance = getEntityManager().find(Performance.class, bookingRequest.getPerformance());
+
+            // As we can have a mix of ticket types in a booking, we need to load all of them that are relevant, 
+            // id
+            List<TicketPrice> ticketPrices = (List<TicketPrice>) getEntityManager()
+                    .createQuery("select p from TicketPrice p where p.id in :ids")
+                    .setParameter("ids", TicketPrices).getResultList();
+            // Now, map them by id
+            Map<Long, TicketPrice> ticketPricesById = new HashMap<Long, TicketPrice>();
+            for (TicketPrice ticketPrice : ticketPrices) {
+                ticketPricesById.put(ticketPrice.getId(), ticketPrice);
+            }
+
+            // Now, start to create the booking from the posted data
+            // Set the simple stuff first!
+            Booking booking = new Booking();
+            booking.setContactEmail(bookingRequest.getEmail());
+            booking.setPerformance(performance);
+            booking.setCancellationCode("abc");
+
+            // Now, we iterate over each ticket that was requested, and organize them by section and category
+            // we want to allocate ticket requests that belong to the same section contiguously
+            Map<Section, Map<TicketCategory, TicketRequest>> ticketRequestsPerSection = new LinkedHashMap<Section, Map<TicketCategory, TicketRequest>>();
+            for (TicketRequest ticketRequest : bookingRequest.getTicketRequests()) {
+                final TicketPrice ticketPrice = ticketPricesById.get(ticketRequest.getTicketPrice());
+                if (!ticketRequestsPerSection.containsKey(ticketPrice.getSection())) {
+                    ticketRequestsPerSection
+                            .put(ticketPrice.getSection(), new LinkedHashMap<TicketCategory, TicketRequest>());
+                }
+                ticketRequestsPerSection.get(ticketPrice.getSection()).put(
+                        ticketPricesById.get(ticketRequest.getTicketPrice()).getTicketCategory(), ticketRequest);
+            }
+
+            // Now, we can allocate the tickets
+            // Iterate over the sections
+            for (Section section : ticketRequestsPerSection.keySet()) {
+                int totalTicketsRequestedPerSection = 0;
+                // Compute the total number of tickets required (a ticket category doesn't impact the actual seat!)
+                final Map<TicketCategory, TicketRequest> ticketRequestsByCategories = ticketRequestsPerSection.get(section);
+                // calculate the total quantity of tickets to be allocated in this section
+                for (TicketRequest ticketRequest : ticketRequestsByCategories.values()) {
+                    totalTicketsRequestedPerSection += ticketRequest.getQuantity();
+                }
+                // try to allocate seats - if this fails, an exception will be thrown
+                List<Seat> seats = seatAllocationService.allocateSeats(section, performance, totalTicketsRequestedPerSection, true);
+                // allocation was successful, begin generating tickets
+                // associate each allocated seat with a ticket, assigning a price category to it
+                int seatCounter = 0;
+                // Now, add a ticket for each requested ticket to the booking
+                for (TicketCategory ticketCategory : ticketRequestsByCategories.keySet()) {
+                    final TicketRequest ticketRequest = ticketRequestsByCategories.get(ticketCategory);
+                    final TicketPrice ticketPrice = ticketPricesById.get(ticketRequest.getTicketPrice());
+                    for (int i = 0; i < ticketRequest.getQuantity(); i++) {
+                        Ticket ticket = new Ticket(seats.get(seatCounter + i), ticketCategory, ticketPrice.getPrice());
+                        // getEntityManager().persist(ticket);
+                        booking.getTickets().add(ticket);
+                    }
+                    seatCounter += ticketRequest.getQuantity();
+                }
+            }
+            // Persist the booking, including cascaded relationships
+            booking.setPerformance(performance);
+            booking.setCancellationCode("abc");
+            getEntityManager().persist(booking);
+            newBookingEvent.fire(booking);
+            return Response.ok().entity(booking).type(MediaType.APPLICATION_JSON_TYPE).build();
+        } catch (ConstraintViolationException e) {
+            // If validation of the data failed using Bean Validation, then send an error
+            Map<String, Object> errors = new HashMap<String, Object>();
+            List<String> errorMessages = new ArrayList<String>();
+            for (ConstraintViolation<?> constraintViolation : e.getConstraintViolations()) {
+                errorMessages.add(constraintViolation.getMessage());
+            }
+            errors.put("errors", errorMessages);
+            return Response.status(Response.Status.BAD_REQUEST).entity(errors).build();
+        } catch (Exception e) {
+            // Finally, handle unexpected exceptions
+            Map<String, Object> errors = new HashMap<String, Object>();
+            errors.put("errors", Collections.singletonList(e.getMessage()));
+            return Response.status(Response.Status.BAD_REQUEST).entity(errors).build();
+        }
+    }
+
+}
+
+------------------------------------------------------------------------------------------
+
+We would also like to be able to delete bookings, therefore we will add a corresponding method
+as well:
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/rest/BookingService.java
+[source,java]
+------------------------------------------------------------------------------------------
+@Singleton
+public class BookingService extends BaseEntityService<Booking> {
+
+    @Inject
+    SeatAllocationService seatAllocationService;
+
+    @Inject @Created
+    private Event<Booking> newBookingEvent;
+    
+    @Inject @Cancelled
+    private Event<Booking> cancelledBookingEvent;
+    
+    public BookingService() {
+        super(Booking.class);
+    }
+
+    /**
+     * <p>
+     * Delete a booking by id
+     * </p>
+     * @param id
+     * @return
+     */
+    @DELETE
+    @Path("/{id:[0-9][0-9]*}")
+    public Response deleteBooking(@PathParam("id") Long id) {
+        Booking booking = getEntityManager().find(Booking.class, id);
+        if (booking == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+        getEntityManager().remove(booking);
+        cancelledBookingEvent.fire(booking);
+        return Response.ok().build();
+    }
+
+}
+
+------------------------------------------------------------------------------------------
+
