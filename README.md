@@ -6,7 +6,7 @@ This is a series of tutorials that will walk you through the process of creating
 
 After reading this series you will understand how to:
 
-* [set up your project](ticket-monster-tutorial/blob/master/Intro.textile);
+* [set up your project](ticket-monster-tutorial/blob/master/Introduction.asciidoc);
 * [define the persistence layer of the application](ticket-monster-tutorial/blob/master/DataPersistence.asciidoc);
 * [design and implement the business layer and expose it to the front-end via RESTful endpoints](ticket-monster-tutorial/blob/master/BusinessLogic.textile);
 * [implement a mobile-ready front-end using HTML 5, JSON and JavaScript](ticket-monster-tutorial/blob/master/UserFrontEnd.asciidoc);
