@@ -24,7 +24,7 @@ The end users of the application want to attend some cool events. They will, in 
 
 [[end-user-use-cases-image]]
 .End user use cases
-image::gfx/ticket-monster-user-use-cases.png
+image::gfx/ticket-monster-user-use-cases.png[]
 
 
 What can administrators do?
@@ -39,7 +39,7 @@ Administrators are more concerned the operation of the site. The will manage the
 
 [[administration-use-cases-image]]
 .Administration use cases
-image::gfx/ticket-monster-user-use-cases.png
+image::gfx/ticket-monster-user-use-cases.png[]
 
 Architecture
 ------------
@@ -48,7 +48,7 @@ The general architecture of the application is in the figure below.
 
 [[architecture-image]]
 .Ticket monster architecture
-image::gfx/ticket-monster-architecture.png
+image::gfx/ticket-monster-architecture.png[]
 
 The application uses a Java EE 6 service foundation, using technologies such as CDI, EJB 3.1 and JAX-RS on top of JPA 2 persistence. These services are used in principal for backing the user-facing booking process, the front-end of which is implemened using HTML5 and JavaScript, with support for mobile devices.
 
