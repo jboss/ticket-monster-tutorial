@@ -16,8 +16,8 @@ DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 
 TARGET=target/guides
 
-OUTPUT_FORMATS=("xml" "epub" "pdf" "html")
-OUTPUT_CMDS=("asciidoc -b docbook -o \${output_filename} \$file" "a2x -f epub -D \$dir \$file" "a2x --dblatex-opts \"-P latex.output.revhistory=0\" -D \$dir \$file" "asciidoc -b html5 -a toc2 -a pygments -o \${output_filename} \$file")
+OUTPUT_FORMATS=("html" "xml" "epub" "pdf")
+OUTPUT_CMDS=("asciidoc -b html5 -a toc2 -a pygments -o \${output_filename} \$file" "asciidoc -b docbook -o \${output_filename} \$file" "a2x -f epub -D \$dir \$file" "a2x --dblatex-opts \"-P latex.output.revhistory=0\" -D \$dir \$file")
 
 echo "** Building tutorial"
 
