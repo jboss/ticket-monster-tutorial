@@ -1,0 +1,75 @@
+What is TicketMonster?
+======================
+
+Ticket Monster is a moderately complex application that demonstrates how to build modern applications using JBoss web technologies. You can try using it, download it, fork it on GitHub and learn more about it from the accompanying tutorial.
+
+Apart from being a demo, Ticket Monster provides an already existing application structure that you can grab and use for trying out your use cases, testing your own ideas, or, if you so wish, contribute back to the community with extensions.
+
+Use cases
+---------
+
+We have grouped the current use cases in two major categories: end user oriented and administrative. 
+
+What can end users do?
+~~~~~~~~~~~~~~~~~~~~~~
+
+The end users of the application want to attend some cool events. They will, in principal, try to find shows and create or cancel their bookings. So their use cases are:
+
+* look for current events;
+* look for venues;
+* select shows (events taking place at specific venues) and choose a performance time;
+* book tickets;
+* view current bookings;
+* cancel bookings;
+
+[[end-user-use-cases-image]]
+.End user use cases
+image::gfx/ticket-monster-user-use-cases.png
+
+
+What can administrators do?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Administrators are more concerned the operation of the site. The will manage the so-called "master data": information about venues, events and shows, and want to see how many tickets have been sold. Their use cases are:
+
+* add, remove and update events;
+* add, remove and update venues (including venue layouts);
+* add, remove and update shows and performances;
+* monitor ticket sales for current shows;
+
+[[administration-use-cases-image]]
+.Administration use cases
+image::gfx/ticket-monster-user-use-cases.png
+
+Architecture
+------------
+
+The general architecture of the application is in the figure below.
+
+[[architecture-image]]
+.Ticket monster architecture
+image::gfx/ticket-monster-architecture.png
+
+The application uses a Java EE 6 service foundation, using technologies such as CDI, EJB 3.1 and JAX-RS on top of JPA 2 persistence. These services are used in principal for backing the user-facing booking process, the front-end of which is implemened using HTML5 and JavaScript, with support for mobile devices.
+
+The major part of the administration site is centered around CRUD use cases, so instead of writing everything manually, the business layer and UI are generated using JBoss Forge, using EJB3.1, CDI and JSF. For a better user experience, we will use Richfaces UI components. 
+
+Monitoring sales requires staying in touch with the latest changes on the server side, so this part of the application will be developed in GWT and showcases Errai's support for real-time updates via client-server CDI eventing.
+
+Learn more about it
+-------------------
+
+The example is accompanied by a series of tutorials that will walk you through the process of creating the TicketMonster application from end to end.
+
+After reading this series you will understand how to:
+
+* set up your project;
+* define the persistence layer of the application;
+* design and implement the business layer and expose it to the front-end via RESTful endpoints;
+* implement a mobile-ready front-end using HTML 5, JSON and JavaScript;
+* develop a JSF-based administration interface rapidly using JSF and JBoss Forge;
+* thoroughly test your project using JUnit and Arquillian;
+
+Throughout the series, you will be shown how to achieve these goals using JBoss Developer Studio.
+
+
