@@ -7,7 +7,332 @@ Learn how to implement an event-driven data collection dashboard using GWT and C
 You've just an administration view, and would like to collect real-time information about ticket sales and attendance. Now it would be good to implement a dashboard that can collect data and receive real-time updates. After reading this tutorial, you will understand our dashboard design and the choices that we made in its implementation. Topics covered include:
 
 * Adding GWT to your application
-* Setting up CDI server-client eventing using 
+* Setting up CDI server-client eventing using Errai
 * Testing GWT applications 
 
 The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through. For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
+
+
+Errai, GWT and the TicketMonster
+--------------------------------
+
+A booking monitor, developed using Errai and GWT, has been added to the TicketMonster application. It shows the live updating booking status of all performances and shows. These live updates are powered by CDI events crossing the client-server boundary, a feature provided by the Errai Framework. 
+
+
+Module definition
+~~~~~~~~~~~~~~~~~
+
+The first step is to add a GWT module descriptor (a .gwt.xml file) which defines the GWT module, its dependencies and configures the client source paths. Only classes in these source paths will be compiled to JavaScript by the GWT compiler. Here's the BookingMonitor.gwt.xml file:
+
+.src/main/resources/org/jboss/jdf/example/ticketmonster/BookingMonitor.gwt.xml
+[source,xml]
+---------------------------------------------------------------------------------------------------------
+<!DOCTYPE module PUBLIC "-//Google Inc.//DTD Google Web Toolkit 1.6//EN"
+        "http://google-web-toolkit.googlecode.com/svn/releases/1.6/distro-source/core/src/gwt-module.dtd">
+
+<!--
+   This file declares the Errai/GWT module for the TicketMonster booking monitor,
+   which shares the model classes with the user-facing part of the app, but defines
+   its own user interface for TicketMonster administrators.
+-->
+
+<module rename-to="BookingMonitor">
+    <inherits name="org.jboss.errai.common.ErraiCommon"/>
+    <inherits name="org.jboss.errai.bus.ErraiBus"/>
+    <inherits name="org.jboss.errai.ioc.Container"/>
+    <inherits name="org.jboss.errai.enterprise.CDI"/>
+    
+    <!-- Model classes that are shared with the rest of the application -->
+    <source path="model"/>
+       
+    <!-- Classes that are specific to 'booking monitor' features; not shared with rest of app -->
+    <source path="monitor"/>
+    
+    <!-- Limit the supported browsers for the sake of this demo -->
+    <set-property name="user.agent" value="ie8,safari,gecko1_8"/>
+</module>
+---------------------------------------------------------------------------------------------------------
+
+The `rename-to` attribute specifies the output directory and file name of the resulting JavaScript file. In this case we specified that the `BookingMonitor` module will be compiled into 'BookingMonitor/BookingMonitor.nocache.js' in the project's output directory. The module further inherits the required Errai modules, and specifies the already existing `model` package as source path, as well as a new package named `monitor`, which will contain all the client source code specific to the booking monitor.
+
+Host page
+~~~~~~~~~
+
+In the next step we add a _host HTML page_ which includes the generated JavaScript and all required CSS files for the booking monitor. It further specifies a div element with id `content` which will be used as a container for the booking monitor's user interface. 
+
+.src/main/webapp/booking-monitor.html
+[source,xml]
+---------------------------------------------------------------------------------------------------------
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ticket Monster Administration</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <link rel="stylesheet" href="resources/bootstrap/css/bootstrap.css" />
+    <link type="text/css" rel="stylesheet" href="resources/css/screen.css" />
+    
+    <script type="text/javascript" src="BookingMonitor/BookingMonitor.nocache.js"></script>
+</head>
+
+<body>
+    <div id="container">
+        <div id="menu">
+            <div class="navbar">
+                <div class="navbar-inner">
+                    <div class="container">
+                        <a class="brand">JBoss Ticket Monster Booking Monitor</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <h3 class="booking-status-header">Booking status</h3>
+        <div id="content" class="container-fluid"></div>
+    </div>
+
+    <footer>
+        <div style="text-align: center;">
+            <img src="resources/img/logo.png" alt="Errai" />
+        </div>
+    </footer>
+</body>
+</html>
+---------------------------------------------------------------------------------------------------------
+
+Enabling Errai
+~~~~~~~~~~~~~~
+
+For enabling Errai in our application we will add an `ErraiApp.properties` marker file. When it is detected inside a JAR or at the top of any classpath, the subdirectories are scanned for deployable components. As such, all Errai application modules in a project must contain an ErraiApp.properties at the root of all classpaths that you wish to be scanned, in this case `src/mai/resources`.
+
+We will also add an `ErraiService.properties` file, which contains basic configuration for the bus itself. Unlike ErraiApp.properties, there should be at most one ErraiService.properties file on the classpath of a deployed application. 
+
+.src/main/resources/ErraiService.properties
+[source,properties]
+---------------------------------------------------------------------------------------------------------
+#
+# Request dispatcher implementation (default is SimpleDispatcher)
+#
+errai.dispatcher_implementation=org.jboss.errai.bus.server.SimpleDispatcher
+---------------------------------------------------------------------------------------------------------
+
+Preparing the wire objects
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+One of the strengths of Errai is the ability of using domain objects for communication across the wire. In order for that to be possible, all model classes that are transferred using Errai RPC or Errai CDI need to be annotated with the Errai-specific annotation `@Portable`. We will begin by annotating the `Booking` class which used as an the event payload.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/model/Booking.java
+[source,java]
+---------------------------------------------------------------------------------------------------------
+...
+import org.jboss.errai.common.client.api.annotations.Portable;
+...
+@Portable
+public class Booking implements Serializable {
+...
+}
+---------------------------------------------------------------------------------------------------------
+
+You should do the same for the other model classes.
+
+
+The EntryPoint
+~~~~~~~~~~~~~~
+
+We are set up now and ready to start coding. The first class we need is the EntryPoint into the GWT application. Using Errai, all it takes is to create a POJO and annotate it with `@EntryPoint`.
+
+.src/main/java/org/jboss/jdf/example/ticketmonster/monitor/client/local/BookingMonitor.java
+[source,java]
+---------------------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.monitor.client.local;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.enterprise.event.Observes;
+import javax.inject.Inject;
+
+import org.jboss.errai.bus.client.api.RemoteCallback;
+import org.jboss.errai.ioc.client.api.AfterInitialization;
+import org.jboss.errai.ioc.client.api.Caller;
+import org.jboss.errai.ioc.client.api.EntryPoint;
+import org.jboss.jdf.example.ticketmonster.monitor.client.shared.BookingMonitorService;
+import org.jboss.jdf.example.ticketmonster.monitor.client.shared.qualifier.Cancelled;
+import org.jboss.jdf.example.ticketmonster.monitor.client.shared.qualifier.Created;
+import org.jboss.jdf.example.ticketmonster.model.Booking;
+import org.jboss.jdf.example.ticketmonster.model.Performance;
+import org.jboss.jdf.example.ticketmonster.model.Show;
+
+import com.google.gwt.user.client.ui.RootPanel;
+
+/**
+ * The entry point into the TicketMonster booking monitor. 
+ * 
+ * The {@code @EntryPoint} annotation indicates to the Errai framework that 
+ * this class should be instantiated inside the web browser when the web page
+ * is first loaded.
+ * 
+ * @author Christian Sadilek <csadilek@redhat.com>
+ */
+@EntryPoint
+public class BookingMonitor {
+    /**
+     * This map caches the number of sold tickets for each {@link Performance} using 
+     * the performance id as key.
+     */
+    private static Map<Long, Long> occupiedCounts;
+    
+    /**
+     * This is the client-side proxy to the {@link BookingMonitorService}. 
+     * The proxy is generated at build time, and injected into this field when the page loads.
+     */
+    @Inject
+    private Caller<BookingMonitorService> monitorService;
+
+    /**
+     * We store references to {@link ShowStatusWidget}s in this map, so we can update
+     * these widgets when {@link Booking}s are received for the corresponding {@link Show}.
+     */
+    private Map<Show, ShowStatusWidget> shows = new HashMap<Show, ShowStatusWidget>();
+    
+    /**
+     * This method constructs the UI.
+     * 
+     * Methods annotated with Errai's {@link AfterInitialization} are only called once 
+     * everything is up and running, including the communication channel to the server.
+     */
+    @AfterInitialization
+    public void createAndShowUI() {
+        // Retrieve the number of sold tickets for each performance. 
+        monitorService.call(new RemoteCallback<Map<Long, Long>>() {
+            @Override
+            public void callback(Map<Long, Long> occupiedCounts) {
+                BookingMonitor.occupiedCounts = occupiedCounts;
+                listShows();
+            }
+        }).retrieveOccupiedCounts();
+    }
+
+    private void listShows() {
+        // Retrieve all shows
+        monitorService.call(new RemoteCallback<List<Show>>() {
+            @Override
+            public void callback(List<Show> shows) {
+                // Sort based on event name
+                Collections.sort(shows, new Comparator<Show>() {
+                    @Override
+                    public int compare(Show s0, Show s1) {
+                        return s0.getEvent().getName().compareTo(s1.getEvent().getName());
+                    }
+                });
+                
+                // Create a show status widget for each show
+                for (Show show : shows) {
+                    ShowStatusWidget sw = new ShowStatusWidget(show);
+                    BookingMonitor.this.shows.put(show, sw);
+                    RootPanel.get("content").add(sw);
+                }
+            }
+        }).retrieveShows();
+    }
+    
+}
+---------------------------------------------------------------------------------------------------------
+
+As soon as Errai has completed its initialization process, the `createAndShowUI` method is invoked (`@AfterInitialization` takes care of that). In this case the method will fetch initial data from the server using Errai RPC and construct the user interface. To carry out the remote procedure call, we use an injected `Caller` for the remote interface `BookingMonitorService` which is part of the `org.jboss.jdf.example.ticketmonster.monitor.client.shared` package and whose implementation `BookingMonitorServiceImpl` has been explained in the previous chapter.
+
+In order for the booking status to be updated in real-time, the class must be notified when a change has occured. If you have built the service layer already, you may remember that the JAX-RS `BookingService` class will fire CDI events whenver a booking has been created or cancelled. Now we need to listen to those events.
+
+---------------------------------------------------------------------------------------------------------
+package org.jboss.jdf.example.ticketmonster.monitor.client.local;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.enterprise.event.Observes;
+import javax.inject.Inject;
+
+import org.jboss.errai.bus.client.api.RemoteCallback;
+import org.jboss.errai.ioc.client.api.AfterInitialization;
+import org.jboss.errai.ioc.client.api.Caller;
+import org.jboss.errai.ioc.client.api.EntryPoint;
+import org.jboss.jdf.example.ticketmonster.monitor.client.shared.BookingMonitorService;
+import org.jboss.jdf.example.ticketmonster.monitor.client.shared.qualifier.Cancelled;
+import org.jboss.jdf.example.ticketmonster.monitor.client.shared.qualifier.Created;
+import org.jboss.jdf.example.ticketmonster.model.Booking;
+import org.jboss.jdf.example.ticketmonster.model.Performance;
+import org.jboss.jdf.example.ticketmonster.model.Show;
+
+import com.google.gwt.user.client.ui.RootPanel;
+
+/**
+ * The entry point into the TicketMonster booking monitor. 
+ * 
+ * The {@code @EntryPoint} annotation indicates to the Errai framework that 
+ * this class should be instantiated inside the web browser when the web page
+ * is first loaded.
+ * 
+ * @author Christian Sadilek <csadilek@redhat.com>
+ */
+@EntryPoint
+public class BookingMonitor {
+    
+	/**
+     * Responds to the CDI event that's fired on the server when a {@link Booking} is created.
+     * 
+     * @param booking  the create booking
+     */
+    public void onNewBooking(@Observes @Created Booking booking) {
+        updateBooking(booking, false);
+    }
+    
+    /**
+     * Responds to the CDI event that's fired on the server when a {@link Booking} is cancelled.
+     * 
+     * @param booking  the cancelled booking
+     */
+    public void onCancelledBooking(@Observes @Cancelled Booking booking) {
+        updateBooking(booking, true);
+    }
+    
+    // update the UI widget to reflect the new or cancelled booking
+    private void updateBooking(Booking booking, boolean cancellation) {
+        ShowStatusWidget sw = shows.get(booking.getPerformance().getShow());
+        if (sw != null) {
+            long count = getOccupiedCountForPerformance(booking.getPerformance());
+            count += (cancellation) ? -booking.getTickets().size() : booking.getTickets().size();
+              
+            occupiedCounts.put(booking.getPerformance().getId(), count);
+            sw.updatePerformance(booking.getPerformance());
+        }
+    }
+    
+    /**
+     * Retrieve the sold ticket count for the given {@link Performance}.
+     * 
+     * @param p  the performance
+     * @return number of sold tickets.
+     */
+    public static long getOccupiedCountForPerformance(Performance p) {
+        Long count = occupiedCounts.get(p.getId());
+        return (count == null) ? 0 : count.intValue();
+    }
+    
+}
+---------------------------------------------------------------------------------------------------------
+
+The newly created methods `onNewBooking` and `onCancelledBooking`are _event listeners_. They are identified as such by the `@Observes` annotation applied to their parameters. By using the `@Created` and `@Cancelled` qualifiers that we have defined in our application, we narrow down the range of events that they listen.
+
+
+
+The widgets
+~~~~~~~~~~~
+
+The last step involves 
+
+The user interface is constructed using two classes: `ShowStatusWidget` and `PerformanceStatusWidget`. A show has multiple performances, so an instance of `ShowStatusWidget` contains a `PerformanceStatusWidget` for each performance. The `PerformanceStatusWidget` will be updated every time a booking event is received on the client.
