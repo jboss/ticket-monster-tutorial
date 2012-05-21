@@ -5,7 +5,9 @@ Purpose and Target Audience
 ---------------------------
 The target audience for this tutorial are those individuals who do not yet have a great deal of experience with Eclipse + JBoss Tools (JBoss Developer Studio), JBoss Enterprise Application 6 or JBoss AS 7, Java EE 6 features like JAX-RS or HTML5 & jQuery for building an mobile web front-end.  
 
-If you prefer to watch instead of read, a large portion of this content is also covered in video form at link: http://docs.jboss.org/tools/movies/
+This tutorial sets the stage for the creation of TicketMonster - our sample application that illustrates how to bring together the best features of Java EE 6 + JBoss to create a rich, mobile-optimized and dynamic application - https://github.com/jboss/ticket-monster
+
+If you prefer to watch instead of read, a large portion of this content is also covered in video form at  http://docs.jboss.org/tools/movies/
 
 In this tutorial, we will touch on the following:
 - Working with JBoss Developer Studio (Eclipse + JBoss Tools)
@@ -20,65 +22,71 @@ In this tutorial, we will touch on the following:
 - Using the Mobile BrowserSim
 
 [[jbds5_mobile_browsersim_image]]
-.JBoss Developer Studio 5.png
-image::gfx/introduction/jbds5_mobile_browsersim.png[]
+.JBoss Developer Studio 5 with Mobile BrowserSim
+image::gfx/introduction/jbds5_mobile_browsersim.png[scaledwidth="90%"]
+
 
 Installation
 ------------
 
-The first order of business is to get your development environment setup and JBoss Developer Studio v5 installed.  JBoss Developer Studio is Eclipse Indigo (3.7.2) for Java EE Developers plus select JBoss Tools and is available for free.  You may also choose to install JBoss Tools 3.3 into your existing Eclipse Indigo for Java EE Developers. The quickest solution to help with your installation is to watch a video which provides both installation assistance as well a short overview of our Integrated Development Environment (IDE).
+The first order of business is to get your development environment setup and JBoss Developer Studio v5 installed.  JBoss Developer Studio is Eclipse Indigo (3.7.2) for Java EE Developers plus select JBoss Tools and is available for free at http://www.jboss.org/developer.  You may also choose to install JBoss Tools 3.3 into your existing Eclipse Indigo for Java EE Developers.   This document uses screenshots depicting JBoss Developer Studio.
 
-You must have a Java Development Kit (JDK) installed, either v6 or v7 will work - while a JVM runtime will work for most use cases, for a developer environment it is normally best to have the full JDK.  System requirements for JBoss Developer Studio are listed in the online documentation.
-link: http://docs.redhat.com/docs/en-US/JBoss_Developer_Studio/5.0.Beta/html/Getting_Started_Guide/minimumrequirements.html
+You must have a Java Development Kit (JDK) installed, either v6 or v7 will work - while a JVM runtime will work for most use cases, for a developer environment it is normally best to have the full JDK.  System requirements for JBoss Developer Studio are listed in the online documentation. + http://docs.redhat.com/docs/en-US/JBoss_Developer_Studio/5.0.Beta/html/Getting_Started_Guide/minimumrequirements.html
 
-JBoss Developer Studio installation and introduction
-link: http://vimeo.com/39606090
+JBoss Developer Studio installation and introduction +
+http://vimeo.com/39606090
 
-JBoss Tools into Eclipse Indigo installation and introduction
-link: http://vimeo.com/39743315
+JBoss Tools into Eclipse Indigo installation and introduction +
+http://vimeo.com/39743315
 
 The JBoss Developer Studio installer normally has a very long name such as
 "jbdevstudio-product-universal-5.0.0.v201204301418M-H119.jar" where the latter portion of the file name is related to build date and version information and the text near the front related to what target OS the installer is for.   The "universal" installer is for any operating system.  To launch the installer you may simply be able to double-click on the .jar file name or you may need to issue the following from the operating system command line:
-"java -jar jbdevstudio-product-universal-5.0.0.v201204301418M-H119.jar"
+*java -jar jbdevstudio-product-universal-5.0.0.v201204301418M-H119.jar*
+
+We recommend using the "universal" installer as it handles Windows, Mac OS X and Linux - 32-bit and 64-bit versions.
+
+Note: Even if you are installing on a 64-bit OS, you may still wish to use the 32-bit JVM for the JBoss Developer Studio (or Eclipse + JBoss Tools).   The 32-bit version allows you access to the Visual Page Editor - a split-pane editor that gives you a glimpse of what your HTML/XHTML (JSF, JSP, etc) will look like.  Also, the 32-bit version uses less memory than the 64-bit version.  You may still run your application servers in 64-bit JVMs if needed to insure compatibility with the production environment while keeping your IDE in 32-bit mode.
 
 [[installer-wizard_image]]
 .Installation Wizard 1 of 9
-image::gfx/introduction/installer_wizard_page1.png[]
+image::gfx/introduction/installer_wizard_page1.png[scaledwidth="80%"]
 
 The rest of the steps are fairly self explanatory.  If you run into trouble, please consult the videos above as they explore a few troubleshooting tips related to JRE/JDK setup.
 
-Please make sure to say *Yes* to the prompt that says "Will you allow JBoss Tools team to receive anonymous usage statistics for this Eclipse instance with JBoss Tools?".  This information is tremdously helpful to us when it comes to prioritizing our QA efforts in terms of operating system platforms. More information concerning our usage tracking can be found at link: http://www.jboss.org/tools/usage
+Please make sure to say *Yes* to the prompt that says "Will you allow JBoss Tools team to receive anonymous usage statistics for this Eclipse instance with JBoss Tools?".  This information is very helpful to us when it comes to prioritizing our QA efforts in terms of operating system platforms. More information concerning our usage tracking can be found at http://www.jboss.org/tools/usage
 
-Also, if you have not already installed the JBoss Enterprise Application Platform 6 or JBoss AS 7, then those steps will be covered in the next section of this tutorial.
+Also, if you have not already installed the JBoss Enterprise Application Platform 6 or JBoss AS 7, then those steps will be covered in the next section of this tutorial.  You can skip that step in the installation wizard as there are numerous ways to add a JBoss server to your IDE.
 
 Creating a new Java EE 6 project with Maven
 -------------------------------------------
 
-Now that everything is properly installed, configured, running and verified to work plus you know you way around the tools and environment, let's build something "from scratch".
+Now that everything is properly installed, configured, running and verified to work, let's build something "from scratch".
 
-First, select *Java EE Web Project* from JBoss Central under Create Projects we will be using this archetype for the creation of a Java EE 6 web application.  The additional benefit of using this archetype is that it provides a Maven-based project which can be built outside of the IDE as well as in continuous integration solutions like Hudson/Jenkins.
+First, select *Java EE Web Project* from JBoss Central under Create Projects we will be using this archetype for the creation of a Java EE 6 web application (.war).  The additional benefit of using this archetype is that it provides a Maven-based project which can be built outside of the IDE as well as in continuous integration solutions like Hudson/Jenkins.
 
 [[jboss-central_image]]
 .JBoss Central
 image::gfx/introduction/jboss_dev_studio_jboss_central.png[]
 
-We also recommend that you switch to the JBoss Perspective if you have not already.  Also, for a deeper dive into the world of Maven and how it is used with JBoss Developer Studio 5 (JBoss Tools 3.3) and Enterprise Application Platform 6 (Application Server 7) please take a few minutes to review this video link: http://vimeo.com/39796236
+We also recommend that you switch to the JBoss Perspective if you have not already.  Also, for a deeper dive into the world of Maven and how it is used with JBoss Developer Studio 5 (JBoss Tools 3.3) and Enterprise Application Platform 6 (Application Server 7) please feel free to take a few minutes to review this video + http://vimeo.com/39796236
+
+NOTE: If you close JBoss Central, it is only a click away - simply click on the JBoss "balls" icon in the Eclipse toolbar - it is normally the last icon, on the last row - assuming you are in the JBoss Perspective.
 
 Once Java EE Web Project has been selected you will be prompted with a dialog box that verifies that Eclipse is configured correctly if you are in a brand new workspace, the application server will not be configured yet and you will notice the lack of a check mark on the server/runtime row.
 
 [[new-project-wizard_image]]
 .New Project Wizard
-image::gfx/introduction/new_project_wizard.png[]
+image::gfx/introduction/new_project_wizard.png[scaledwidth="90%"]
 
 Note: If you have been using another application or web server such as Tomcat, shut it down now to avoid any port conflicts.
 
-There are several ways to add either JBoss Enterprise Application Platform 6 or JBoss AS 7 to Eclipse/JBoss Developer Studio the easiest one in this situation is to click on the *Install...* button. This assumes that the JBoss server has already been downloaded and unzipped.  If you have not yet downloaded the JBoss server, click on the *Download and Install...* button.  Note: The download option only works with the community application server.
+There are several ways to add either a JBoss Enterprise Application Platform 6 or JBoss AS 7 to Eclipse/JBoss Developer Studio the easiest one in this situation is to click on the *Install...* button. This assumes that the JBoss server has already been downloaded and unzipped.  If you have not yet downloaded the JBoss server, click on the *Download and Install...* button.  Note: The download option only works with the community application server.
 
 Selecting *Install…* will pop up the JBoss Runtime Detection section of Preferences.  You can always get back to this dialog by selecting Preferences either under "Eclipse" or "JBoss Developer Studio" on the Mac or under "Window" menu on Windows.
 
 [[jboss_tools_runtime_detection_image]]
 .JBoss Tools Runtime Detection
-image::gfx/introduction/jboss_tools_runtime_detection.png[]
+image::gfx/introduction/jboss_tools_runtime_detection.png[scaledwidth="90%"]
 
 Select the *Add* button, this will take you to a file browser dialog where you can pick the main directory of your unzipped JBoss server.
 
@@ -98,7 +106,7 @@ The JBoss Tools Runtime Detection Preferences screen will reset and you should s
 
 [[jboss_tools_runtime_detection_after_image]]
 .JBoss Tools Runtime Detection Completed
-image::gfx/introduction/jboss_tools_runtime_detection_after.png[]
+image::gfx/introduction/jboss_tools_runtime_detection_after.png[scaledwidth="90%"]
 
 Select *OK* to close the Preferences Dialog
 
@@ -106,17 +114,17 @@ And when you return to the New Project Example dialog, it will have the JBoss AS
 
 [[as_eap_found_image]]
 .JBoss AS 7.0/7.1 or EAP 6 Found
-image::gfx/introduction/as_eap_found.png[]
+image::gfx/introduction/as_eap_found.png[scaledwidth="90%"]
 
 Select *Next*
 
 [[new-project-wizard-step_2_image]]
 .New Project Wizard Step 2
-image::gfx/introduction/new_project_example_step_2.png[]
+image::gfx/introduction/new_project_example_step_2.png[scaledwidth="90%"]
 
 The default *Project name* is "jboss-javaee6-webapp" – if this field appears blank, it is becomes your workspace already contains a "jboss-javaee6-webapp" in which case just provide another name for your project. 
 
-Also, *Target Runtime* is empty and that is normally good for the getting started experience – if you target an Enterprise Application Platform you will need to first configure enterprise Maven repositories.  The previously referenced video on Maven will be helpful as well as this document on Maven link: http://docs.redhat.com/docs/en-US/JBoss_Web_Framework_Kit/2-Beta/html/Maven_Repository_User_Guide/chap-repository-installation.html
+Also, *Target Runtime* is empty and that is normally good for the getting started experience – if you target an Enterprise Application Platform you will need to first configure enterprise Maven repositories.  The previously referenced video on Maven will be helpful as well as this document on Maven + http://docs.redhat.com/docs/en-US/JBoss_Web_Framework_Kit/2-Beta/html/Maven_Repository_User_Guide/chap-repository-installation.html
 
 When the drop down list box is empty, then we assume the community Maven artifacts.
 
@@ -126,7 +134,7 @@ JBoss Tools/JBoss Developer Studio will now generate the template project and im
 
 [[prompt_for_readme_image]]
 .New Project Wizard Step 3
-image::gfx/introduction/prompt_for_readme.png[]
+image::gfx/introduction/prompt_for_readme.png[scaledwidth="90%"]
 
 Select *Finish*
 
@@ -146,7 +154,7 @@ The pom.xml editor has several tabs along its bottom edge.
 
 [[pom_xml_tabs_image]]
 .pom.xml Editor Tabs
-image::gfx/introduction/pom_xml_tabs.png[]
+image::gfx/introduction/pom_xml_tabs.png[scaledwidth="90%"]
 
 For this tutorial, we do not need to edit the pom.xml as it includes all the capabilities of Java EE 6 that we will need (e.g. JPA, JAX-RS, CDI, etc), however, you should spend some time exploring the Dependencies and the pom.xml (source view) tabs.   One key element to make note of is "<jboss.bom.version>1.0.0.M6</jboss.bom.version>" as that establishes if this project uses community or enterprise dependencies.  It is what aggregates the versions of the individually listed Java EE and other API dependencies in the dependency section.  The specific version of "1.0.0.M6" is very likely to change, please do not be surprised if the version is slightly different.  Also, if you are using JBoss Enterprise Application Platform 6 and you selected that as your Target Runtime, you will find a "-redhat-1" suffix on the version string.  
 
@@ -154,50 +162,52 @@ For this tutorial, we do not need to edit the pom.xml as it includes all the cap
 .Project Explorer Java Packages
 image::gfx/introduction/project_explorer_java_packages.png[]
 
-The initial project includes the following Java packages:
-*controller* – contains the backing bean for the JSF page called index.xhtml – specifically supporting the newMember and memberRegistration.register expressions in index.xhtml
-*data* – contains a class which uses @Produces and @Named to return a list of members for index.xhtml
-*model* – contains the JPA entity classes – simple annotated POJOs (@Entity) – in the case of Member.java, it demonstrates the use of new EE6, Bean Validation JSR 303
-*rest* – contains the JAX-RS endpoints, also simple annotated POJOs (@Path)
-*service* - handles the registration transaction for new members
-*util* – contains Resources.java which sets up an alias for @PersistenceContext to be injectable via @Inject
+The initial project includes the following Java packages: +
+- *controller* – contains the backing bean for the JSF page called index.xhtml – specifically supporting the newMember and memberRegistration.register expressions in index.xhtml +
+- *data* – contains a class which uses @Produces and @Named to return a list of members for index.xhtml +
+- *model* – contains the JPA entity classes – simple annotated POJOs (@Entity) – in the case of Member.java, it demonstrates the use of new EE6, Bean Validation JSR 303 +
+- *rest* – contains the JAX-RS endpoints, also simple annotated POJOs (@Path) +
+- *service* - handles the registration transaction for new members + 
+- *util* – contains Resources.java which sets up an alias for @PersistenceContext to be injectable via @Inject
 
 [[project_explorer_resources_image]]
 .Project Explorer Resources
 image::gfx/introduction/project_explorer_resources.png[]
 
-In src/main/resources/ you will find
-- import.sql – contains insert statements that provides initial database data.  This is particularly useful when hibernate.hbm2dll.auto=create-drop as seen in persistence.xml - since the schema is recreated with each deployment
-- META-INF/persistence.xml – this file establishes that this project contains JPA entities and it identifies the datasource as ExampleDS.  It also includes the hibernate.hbm2dll.auto property set to create-drop by default.  ExampleDS is pre-established on both JBoss AS 7 and Enterprise Application Platform 6.   You can visit the application server’s admin console at http://localhost:9990/console/ and see that ExampleDS is mapped to the embedded H2 database. 
+Under src you will find +
 
-In src/test/java you will find a "test" package that contains MemberRegistrationTest.java – this is an Arquillian based test that runs both at the command line (mvn test –Parq-jbossas-remote) as well as from within Eclipse (Run As JUnit Test). 
+- main/resources/*import.sql* – contains insert statements that provides initial database data.  This is particularly useful when hibernate.hbm2dll.auto=create-drop as seen in persistence.xml - since the schema is recreated with each deployment +
 
-In src/main/webapp you will find "index.xhtml", this is the primary JSF-based user interface for the sample application.  If you double-click on that file you will see the JBoss Developer Studio/JBoss Tools Visual Page Editor – allowing you to visually navigate through the file and see the source simultaneously.  Changes to the source are immediately reflected in the visual pane.
+- main/resources/META-INF/*persistence.xml* – this file establishes that this project contains JPA entities and it identifies the datasource as ExampleDS.  It also includes the hibernate.hbm2dll.auto property set to create-drop by default.  ExampleDS is pre-established on both JBoss AS 7 and Enterprise Application Platform 6.  You can visit the application server’s admin console at http://localhost:9990/console/ and see that ExampleDS is mapped to the embedded H2 database.  This tutorial will cover the deployment of the H2 console for exploring the database via web-based interactive SQL tool +
+
+- test/java/test you will find a "test" package that contains *MemberRegistrationTest.java* – this is an Arquillian based test that runs both at the command line (mvn test –Parq-jbossas-remote) as well as from within Eclipse (Run As JUnit Test). +
+
+- src/main/webapp you will find *index.xhtml*, this is the primary JSF-based user interface for the sample application.  If you double-click on that file you will see the JBoss Developer Studio/JBoss Tools Visual Page Editor – allowing you to visually navigate through the file and see the source simultaneously.  Changes to the source are immediately reflected in the visual pane. +
 
 [[visual_page_editor_image]]
 .Visual Page Editor
-image::gfx/introduction/visual_page_editor.png[]
+image::gfx/introduction/visual_page_editor.png[scaledwidth="90%"]
 
-In src/main/webapp/WEB-INF, you will find three key files:
--beans.xml is basically empty but it is the marker file that indicates this is a CDI capable EE6 application.
--faces-config.xml is also empty but it is the marker file that indicates this is a JSF capable EE6 application.
-- jboss-javaee6-webapp-ds.xml - is actually a hot deployable file that establishes a new datasource within the JBoss container. 
+In src/main/webapp/WEB-INF, you will find three key files: +
+- *beans.xml* is basically empty but it is the marker file that indicates this is a CDI capable EE6 application. +
+- *faces-config.xml* is also empty but it is the marker file that indicates this is a JSF capable EE6 application. +
+- *jboss-javaee6-webapp-ds.xml* - is actually a hot deployable file that establishes a new datasource within the JBoss container. 
 
 Adding a new entity using Forge
 -------------------------------
-There are several ways to add a new JPA entity to your project:
-1) Right-click on the "model" package and select New -> Class.  JPA entities are annotated POJOs so starting from a simple class is a common approach.   
-2) Reverse Engineering: Right-click on the "model" package and select New -> JPA Entities from Tables.  For more information on this technique see this video - link: https://vimeo.com/39608294
-3) Using Forge to script the creation of a new entity for your project 
-4) Reverse Engineering with Forge: Forge has a Hibernate Tools plug-in that allows you to script the conversion of RDBMS schema into JPA entities.  For more information on this technique see this video - link: https://vimeo.com/39608326
+There are several ways to add a new JPA entity to your project: +
+1) Right-click on the "model" package and select *New -> Class*.  JPA entities are annotated POJOs so starting from a simple class is a common approach.  +
+2) *Reverse Engineering*: Right-click on the "model" package and select New -> JPA Entities from Tables.  For more information on this technique see this video - https://vimeo.com/39608294 +
+3) *Using Forge* to script the creation of a new entity for your project +
+4) *Reverse Engineering with Forge*: Forge has a Hibernate Tools plug-in that allows you to script the conversion of RDBMS schema into JPA entities.  For more information on this technique see this video -  https://vimeo.com/39608326
 
-For the purposes of this tutorial, we will take advantage of Forge (option 3) to add a new JPA entity, this allows us the fewest keystrokes and we do not yet have a RDBMS schema to reverse engineer.
+For the purposes of this tutorial, we will take advantage of Forge (option 3) to add a new JPA entity, this allows us the fewest keystrokes and we do not yet have a RDBMS schema to reverse engineer.  There is also an optional section for adding an entity using New -> Class, option 1)
 
-Right-click on the model package in the Project Explorer and select Show In -> Forge Console.
+Right-click on the model package in the Project Explorer and select *Show In -> Forge Console*.
 
 [[show_in_forge_console_image]]
 .Show In Forge Console 
-image::gfx/introduction/show_in_forge_console.png[]
+image::gfx/introduction/show_in_forge_console.png[scaledwidth="90%"]
 
 Alternative methods to activate Forge include, use Window -> Show View -> Forge Console or use Cntrl-4 (Windows) or Command-4 (Mac).  Note: the Show In method will issue a "pick-up" command to switch you to the right location within your project.
 
@@ -205,17 +215,17 @@ You should be prompted with "Forge Not Running" dialog – select *Yes*
 
 [[forge_is_not_running_image]]
 .Show Forge Not Running
-image::gfx/introduction/forge_is_not_running.png[]
+image::gfx/introduction/forge_is_not_running.png[scaledwidth="70%"]
 
 If you are not prompted you can always start Forge using the green arrow (or stop via the red square) in the Forge Console tab.
 
 [[forge_start_stop_image]]
 .Show Forge Start/Stop
-image::gfx/introduction/forge_console_tab.png[]
+image::gfx/introduction/forge_console_tab.png[scaledwidth="90%"]
 
 [[forge_console_image]]
 .Show Forge Console
-image::gfx/introduction/forge_console.png[]
+image::gfx/introduction/forge_console.png[scaledwidth="90%"]
 
 Forge is a command-oriented rapid application development tool that allows you to interactively type commands that generate code and update the IDE.  One of its key features is complete your commands via the tab key.  
 
@@ -237,17 +247,17 @@ The overall commands are as follows:
 	
 	field string --named picture
 
-At the [jboss-jbossee6-webapp] model $ type in `en` and hit the tab key on your keyboard.  `entity` will fill in.   Hit tab again and `entity --named` will appear.  Type in `Event` and add a space, Forge can not anticipate the name of your new entity.  Hit tab again and `--package` will appear.  Now, hit tab 4 times to fill in `org.jboss.tools.examples`,  there are multiple entries underneath examples, so Forge will display those options.  Type in `m` and hit tab to select `model`.
+At the [jboss-jbossee6-webapp] model $ type in `en` and hit the tab key on your keyboard.  `entity` will fill in.   Hit tab again and `entity --named` will appear.  Type in `Event` and add a space, Forge can not anticipate the name of your new entity.  Hit tab again and `--package` will appear.  Now, hit tab 5 times to fill in `org.jboss.tools.examples`,  there are multiple entries underneath examples, so Forge will display those options.  Type in `m` and hit tab to select `model`.
 
 Now hit the Enter/Return key to watch the command execute.  The Event entity will be generated into the "model" package and open up inside of Eclipse.
 
 [[forge_event_entity_image]]
 .Forge new entity
-image::gfx/introduction/forge_event_entity.png[]
+image::gfx/introduction/forge_event_entity.png[scaledwidth="90%"]
 
 [[forge_event_entity_created_image]]
 .Event Entity
-image::gfx/introduction/forge_event_entity_created.png[]
+image::gfx/introduction/forge_event_entity_created.png[scaledwidth="90%"]
 
 Note: The "@Entity public class" line is generated on the same physical line as "import java.lang.Override".
 
@@ -257,28 +267,34 @@ Type `ls` – this will provide a listing of the fields and methods.
 
 [[forge_ls_results_image]]
 .Forge `ls`
-image::gfx/introduction/forge_ls.png[]
+image::gfx/introduction/forge_ls.png[scaledwidth="90%"]
 
 Now that the base Event entity has been created, let's add the fields and their JSR 303 Bean Validation constraints.  
 
 This next step involves adding a "name" property for the Event entity - so that an event could hold data like "Rock Concert". 
 
 Type `fie` and hit tab to fill in `field`, if you hit tab again, Forge will list out the possible field types.   Type in `s` and hit tab, Forge will respond with `string`.  Hit tab again to get `--named` and type in `name`.   
-The resulting command should be `field string --named name1` and then hit Enter\Return.  This will add a private String name member variable and the appropriate get/set methods.  You should also notice that the toString method is tweaked to include "name" as well.
+The resulting command should be `field string --named name` and then hit Enter\Return.  This will add a private String name member variable and the appropriate get/set methods.  You should also notice that the toString method is tweaked to include "name" as well.
 
 [[forge_added_name_image]]
 .@Column name
-image::gfx/introduction/forge_added_name.png[]
+image::gfx/introduction/forge_added_name.png[scaledwidth="90%"]
 
 From this point forward, we will assume you have the basics of using Forge's interactive command line.   The remaining commands are:
 
-validation setup
-constraint NotNull --onProperty name
-constraint Size --onProperty name --min 5 --max 50 --message "Must be > 5 and < 50"
-field string --named description
-constraint Size --onProperty description --min 20 --max 1000 --message "Must be > 20 and < 1000"
-field boolean --named major
-field string --named picture
+	validation setup
+	
+	constraint NotNull --onProperty name
+	
+	constraint Size --onProperty name --min 5 --max 50 --message "Must be > 5 and < 50"
+	
+	field string --named description
+	
+	constraint Size --onProperty description --min 20 --max 1000 --message "Must be > 20 and < 1000"
+	
+	field boolean --named major
+	
+	field string --named picture
 
 
 The easiest way to see the results of Forge on the Event.java JPA Entity is to use the Outline View of Eclipse/JBoss Tools/JBoss Developer Studio.   It is normally on the right-side of the IDE when using the JBoss Perspective.
@@ -286,6 +302,33 @@ The easiest way to see the results of Forge on the Event.java JPA Entity is to u
 [[outline_of_event_image]]
 .Outline View
 image::gfx/introduction/outline_of_event.png[]
+
+Reviewing persistence.xml & updating import.sql
+-----------------------------------------------
+
+By default, with the way the *jboss-javaee6-webapp* project is configured, the entity classes become the database schema.  In an earlier section of this tutorial, we briefly described *persistence.xml*.  Please open up that file again and review its settings.   It is still under src/main/resources/META-INF.
+The two key settings are the <jta-data-source> and hibernate.hbm2ddl.auto.  The datasource setting must map to one already established in the src\main\webapp\jboss-javaee6-webapp–ds.xml descriptor file.
+The hibernate.hbm2ddl.auto=create-drop property indicates that missing tables & columns will be created or updated inside the database schema itself.   
+Open up the *import.sql* file, this file contains INSERT statements that will inject sample data into your initial database structure.  Add the following insert statements:
+
+
+	insert into Event (id, name, description, major, picture, version) values (1, 
+	'Shane''s Sock Puppets',
+	'This critically acclaimed masterpiece...',
+	true,
+	'http://dl.dropbox.com/u/65660684/640px-Carnival_Puppets.jpg',
+	1);
+
+	insert into Event (id, name, description, major, picture, version) values (2,
+	'Rock concert of the decade',
+	'Get ready to rock...',
+	true,
+	'http://dl.dropbox.com/u/65660684/640px-Weir%2C_Bob_(2007)_2.jpg',
+	1);
+
+NOTE: The SQL statements should include single quotes to begin and end a string, and to escape a single quote inside of that string.  AsciiDoc tends to mangle the single quotes in the generated PDF - if you copy & paste you may need edit
+
+and *save* the file.
 
 Optional: Adding a new entity as a POJO
 ---------------------------------------
@@ -311,19 +354,19 @@ Now, right-click on the editor itself, and from the pop-up, context menu select 
 
 [[generate_getters_setters_menu_image]]
 .Generate Getters and Setters Menu
-image::gfx/introduction/generate_getters_setters.png[]
+image::gfx/introduction/generate_getters_setters.png[scaledwidth="90%"]
 
 This will create getX and setX methods for all your private members variables, making them accessible properties for the entity class.
 
 [[generate_getters_setters_dialog_image]]
 .Generate Getters and Setters Dialog
-image::gfx/introduction/getter_setter_dialog.png[]
+image::gfx/introduction/getter_setter_dialog.png[scaledwidth="80%"]
 
 *Select All* and *OK*
 
 [[venue_after_getters_setters_image]]
 .Venue.java with gets/sets
-image::gfx/introduction/venue_after_getters_setters.png[]
+image::gfx/introduction/venue_after_getters_setters.png[scaledwidth="90%"]
 
 Now, right-click on the editor, from the pop-up context menu select Source -> Generate Hibernate/JPA Annotations.
 
@@ -331,14 +374,14 @@ If you have not yet saved Venue.java, you will prompted, if you are simply selec
 
 [[save_modified_resources_image]]
 .Save Modified Resources
-image::gfx/introduction/save_modified_resources.png[]
+image::gfx/introduction/save_modified_resources.png[scaledwidth="80%"]
 
 The Hibernate: add JPA annotations Wizard will start up.
 First, verify that Venue is the class you are working on.
 
 [[hibernate_add_jpa_image]]
 .Hibernate: add JPA annotations
-image::gfx/introduction/hibernate_add_jpa_annotations.png[]
+image::gfx/introduction/hibernate_add_jpa_annotations.png[scaledwidth="80%"]
 
 Select *Next*
 
@@ -346,38 +389,12 @@ The next step in the wizard will provide a sampling of the refactored sources �
 
 [[hibernate_add_jpa_annotations_step2_image]]
 .Hibernate: add JPA annotations Step 2
-image::gfx/introduction/hibernate_add_jpa_annotations_step2.png[]
+image::gfx/introduction/hibernate_add_jpa_annotations_step2.png[scaledwidth="80%"]
 
 Select *Finish*
 
 Now you will wish to enter the Bean Validation annotations such as @NotNull can be applied on each member variable. 
 
-Reviewing persistence.xml & updating import.sql
------------------------------------------------
-
-By default, with the way the "jboss-javaee6-webapp" is configured, the entity classes become the database schema.  In an earlier section of this tutorial, we briefly described persistence.xml.  Please open up that file again and review its settings.   It is still under src/main/resources/META-INF.
-The two key settings are the <jta-data-source> and hibernate.hbm2ddl.auto.  The datasource setting must map to one already established in the src\main\webapp\jboss-javaee6-webapp–ds.xml descriptor file.
-The hibernate.hbm2ddl.auto=create-drop property indicates that missing tables & columns will be created or updated inside the database schema itself.   
-Open up the *import.sql* file, this file contains INSERT statements that will inject sample data into your initial database structure.  Add the following insert statements:
-
-[source,sql]
----------------------------------------------------------------------------------------------------------
-insert into Event (id, name, description, major, picture, version) values (1, 
-'Shane''s Sock Puppets',
-'This critically acclaimed masterpiece...',
-true,
-'http://dl.dropbox.com/u/65660684/640px-Carnival_Puppets.jpg',
-1);
-
-insert into Event (id, name, description, major, picture, version) values (2,
-'Rock concert of the decade',
-'Get ready to rock...',
-true,
-'http://dl.dropbox.com/u/65660684/640px-Weir%2C_Bob_(2007)_2.jpg',
-1);
----------------------------------------------------------------------------------------------------------
-
-and save the file.
 
 Deployment
 ----------
@@ -386,32 +403,32 @@ At this point, if you have not already deployed the application, right click on 
 
 [[run_as_run_on_server_image]]
 .Run As -> Run on Server
-image::gfx/introduction/run_as_run_on_server.png[]
+image::gfx/introduction/run_as_run_on_server.png[scaledwidth="90%"]
 
-While you wait for a few seconds for the application server to boot up, make sure that you have installed the h2console.war into the deployments directory.   Simply use any Finder/File Explorer tool (or cp at the command line) to copy the h2console.war from the quickstarts directory.   The community quickstarts can be downloaded from link: http://www.jboss.org/jbossas/downloads/ and the enterprise versions are in the Customer Portal alongside Enterprise Application Platform 6 itself.
+While you wait for a few seconds for the application server to boot up, make sure that you have installed the h2console.war into the deployments directory.   Simply use any Finder/File Explorer tool (or cp at the command line) to copy the h2console.war from the quickstarts directory.   The community quickstarts can be downloaded from http://www.jboss.org/jbossas/downloads/ and the enterprise versions are in the Customer Portal alongside Enterprise Application Platform 6 itself.
 
 [[quickstarts_directory_layout_image]]
 .Quickstarts Directory Layout
-image::gfx/introduction/quickstarts_directory_layout.png[]
+image::gfx/introduction/quickstarts_directory_layout.png[scaledwidth="80%"]
 
 Drag & Drop h2console.war into deployments - notice the .deployed files, if there was a failure you should see a .failed file instead.
 
 [[h2console_deployments_image]]
 .h2console.war in deployments
-image::gfx/introduction/h2console_deployments.png[]
+image::gfx/introduction/h2console_deployments.png[scaledwidth="80%"]
 
 The Run As -> Run on Server option will also launch the internal Eclipse browser with the appropriate URL so that you can immediately begin interacting with the application.
 
 [[result_run_on_server_image]]
 .Eclipse Browser after Run As -> Run on Server
-image::gfx/introduction/result_run_on_server.png[]
+image::gfx/introduction/result_run_on_server.png[scaledwidth="80%"]
 
-Now, using this internal browser (or an external one), go to link: http://localhost:8080/h2console
+Now, using this internal browser (or an external one), go to http://localhost:8080/h2console
 
 
 [[h2console_in_browser_image]]
 .h2console in browser
-image::gfx/introduction/h2console_in_browser.png[]
+image::gfx/introduction/h2console_in_browser.png[scaledwidth="80%"]
 
 Enter "jdbc:h2:mem:jboss-javaee6-webapp" in the JDBC URL - this can be found in the *jboss-javaee6-webapp-ds.xml* file under src\main\webapp\WEB-INF
 
@@ -423,7 +440,7 @@ And if you enter the SQL statement: "select * from event" and select the *Run* (
 
 [[h2console_select_from_event.png]]
 .h2console Select * from Event
-image::gfx/introduction/h2console_select_from_event.png[]
+image::gfx/introduction/h2console_select_from_event.png[scaledwidth="90%"]
 
 In this next section, we will focus on adding a new EE 6 JAX-RS endpoint to provide access to the Event data.
 
@@ -435,7 +452,7 @@ Right-click on the "rest" package, select New -> Class from the context menu.  E
 
 [[new_class_eventservice_image]]
 .New Class EventService
-image::gfx/introduction/new_class_eventservice.png[]
+image::gfx/introduction/new_class_eventservice.png[scaledwidth="80%"]
 
 and select *Finish*
 
@@ -464,13 +481,13 @@ public class EventService {
 
 [[event_service_copy_paste_image]]
 .EventService after Copy and Paste
-image::gfx/introduction/event_service_copy_paste.png[]
+image::gfx/introduction/event_service_copy_paste.png[scaledwidth="80%"]
 
-The easiest solution is to right-click inside the editor and select Source -> Organize Imports from the context menu. 
+The easiest solution is to right-click inside the editor and select *Source -> Organize Imports* from the context menu. 
 
 [[source_organize_imports_image]]
 .Source -> Organize -> Imports
-image::gfx/introduction/source_organize_imports.png[]
+image::gfx/introduction/source_organize_imports.png[scaledwidth="80%"]
 
 Some of the class names are not unique. Eclipse will prompt you with any decisions around what class is intended. Select the following:
 javax.ws.rs.core.MediaType
@@ -480,31 +497,31 @@ java.util.List
 java.inject.Inject
 java.enterprise.context.RequestScoped
 
-The following screenshots illustrate how you handle these decisions.
+The following screenshots illustrate how you handle these decisions. The Figure description indicates the name of the class you should select.
 
 [[organize_imports_1_image]]
 .javax.ws.rs.core.MediaType
-image::gfx/introduction/organize_imports_1.png[]
+image::gfx/introduction/organize_imports_1.png[scaledwidth="70%"]
 
 [[organize_imports_2_image]]
 .org.jboss.tools.examples.Event
-image::gfx/introduction/organize_imports_2.png[]
+image::gfx/introduction/organize_imports_2.png[scaledwidth="70%"]
 
 [[organize_imports_3_image]]
 .javax.ws.rs.Produces
-image::gfx/introduction/organize_imports_3.png[]
+image::gfx/introduction/organize_imports_3.png[scaledwidth="70%"]
 
 [[organize_imports_4_image]]
 .java.util.List
-image::gfx/introduction/organize_imports_4.png[]
+image::gfx/introduction/organize_imports_4.png[scaledwidth="70%"]
 
 [[organize_imports_5_image]]
-.java.inject.Inject
-image::gfx/introduction/organize_imports_5.png[]
+.javax.inject.Inject
+image::gfx/introduction/organize_imports_5.png[scaledwidth="70%"]
 
 [[organize_imports_6_image]]
-.java.enterprise.context.RequestScoped
-image::gfx/introduction/organize_imports_6.png[]
+.javax.enterprise.context.RequestScoped
+image::gfx/introduction/organize_imports_6.png[scaledwidth="70%"]
 
 [source,java]
 ---------------------------------------------------------------------------------------------------------
@@ -521,11 +538,11 @@ import javax.ws.rs.core.MediaType;
 import org.jboss.tools.examples.model.Event;
 ---------------------------------------------------------------------------------------------------------
 
-Once these import statements are in place you should have no more compilation errors.   When you save EventService.java, you can then see it listed under JAX-RS REST Web Services in the Project Explorer.
+Once these import statements are in place you should have no more compilation errors.   When you *save* EventService.java, you can then see it listed under JAX-RS REST Web Services in the Project Explorer.
 
 [[project_explorer_jax_rs_services_image]]
 .Project Explorer JAX-RS Services
-image::gfx/introduction/project_explorer_jax_rs_services.png[]
+image::gfx/introduction/project_explorer_jax_rs_services.png[scaledwidth="80%"]
 
 This feature of JBoss Tools/JBoss Developer Studio provides a nice visual indicator that you have successfully configured your JAX-RS endpoint. 
 
@@ -533,43 +550,42 @@ You can deploy your project – jboss-javaee6-webapp to your local application s
 
 [[full_publish_image]]
 .Full Publish
-image::gfx/introduction/full_publish.png[]
+image::gfx/introduction/full_publish.png[scaledwidth="80%"]
 
-Using the internal Eclipse browser, or one from your workstation, hit this URL 
-link: http://localhost:8080/jboss-javaee6-webapp/rest/events
+Using the internal Eclipse browser, or one from your workstation, hit this URL + http://localhost:8080/jboss-javaee6-webapp/rest/events +
 And you will see the results of the query, formatted as JSON (JavaScript Object Notation) returned into the browser.
 
 [[json_event_results_image]]
-.JSON response
-image::gfx/introduction/json_event_results.png[]
+.JSON Response
+image::gfx/introduction/json_event_results.png[scaledwidth="90%"]
 
-Note:  The “rest” prefix is setup in a file called JaxRsActivator.java and it contains a small bit of code that sets up the application for JAX-RS endpoints.
+NOTE:  The “rest” prefix is setup in a file called JaxRsActivator.java and it contains a small bit of code that sets up the application for JAX-RS endpoints.
 
 Now, it is time to add a HTML5, jQuery based client application that is optimized for the mobile web experience.
 
 Adding a jQuery Mobile client application
 -----------------------------------------
 
-There are numerous JavaScript libraries that help you optimize your end-user experience on a mobile web browser.   We have found that jQuery Mobile is one of the easier ones to get started with but as your skills mature, you might investigate solutions like Sencha Touch, Zepto or Jo.    This tutorial focuses on jQuery Mobile as the basis for creating the UI layer of the application, those UI components interact with the JAX-RS RESTful services (e.g. EventService.java) and we refer to this architecture as POH5 – for plain old HTML5 – to help identify it vs JSF or GWT-based architectures.   Basically POH5 means that you will create the HTML client application without the aid of server-side JSF, Struts or SpringMVC generating it for you. 
-For more information on building mobile applications with JBoss technologies, please visit link: http://www.jboss.org/aerogear.   There is also a HTML 5 archetype listed in the Create Projects section of JBoss Central – that would have been a faster way to complete this task.  However, doing it yourself increases the learning value of this tutorial.  
+There are numerous JavaScript libraries that help you optimize your end-user experience on a mobile web browser.   We have found that jQuery Mobile is one of the easier ones to get started with but as your skills mature, you might investigate solutions like Sencha Touch, Zepto or Jo.  This tutorial focuses on jQuery Mobile as the basis for creating the UI layer of the application, those UI components interact with the JAX-RS RESTful services (e.g. EventService.java) and we refer to this architecture as POH5 – for plain old HTML5 – to help identify it vs JSF or GWT-based architectures.   Basically POH5 means that you will create the HTML client application without the aid of server-side JSF, Struts or SpringMVC generating it for you. 
+For more information on building mobile applications with JBoss technologies, please visit http://www.jboss.org/aerogear.   There is also a HTML 5 archetype listed in the Create Projects section of JBoss Central – that would have been a faster way to complete this task.  However, doing it yourself increases the learning value of this tutorial.  
 
-These next steps will guide you through the creation of a file called "mobile.html" that includes jQuery Mobile.
+These next steps will guide you through the creation of a file called *mobile.html* that includes jQuery Mobile.
 
-First, using the Project Explorer, navigate down to src/main/webapp, and right-click on "webapp". 
+First, using the Project Explorer, navigate down to *src/main/webapp*, and right-click on *webapp*. 
 
 
-The New HTML File Wizard starts off with your target location being "m2e-wtp/web-resources", this is an incorrect location and it is a bug link: https://issues.jboss.org/browse/JBIDE-11472
+The New HTML File Wizard starts off with your target location being "m2e-wtp/web-resources", this is an incorrect location and it is a bug https://issues.jboss.org/browse/JBIDE-11472
 It is possible it may already be corrected by the time you read through this document.  
 
 Simply navigate to jboss-javaee6-webapp/src/main/webapp and enter the File name as "mobile.html".
 
 [[new_html_file_image]]
 .New HTML File
-image::gfx/introduction/new_html_file.png[]
+image::gfx/introduction/new_html_file.png[scaledwidth="70%"]
 
 [[new_html_file_correct_location_image]]
 .New HTML File src/main/webapp
-image::gfx/introduction/new_html_file_correct_location.png[]
+image::gfx/introduction/new_html_file_correct_location.png[scaledwidth="70%"]
 
 Select *Next*
 
@@ -577,7 +593,7 @@ On the Select HTML Template page of the New HTML File Wizard, select "HTML5 jQue
 
 [[select_html_template]]
 .Select HTML5 jQuery Mobile Template
-image::gfx/introduction/select_html_template.png[]
+image::gfx/introduction/select_html_template.png[scaledwidth="70%"]
 
 Select *Finish*
 
@@ -585,8 +601,7 @@ The secret ingredient to HTML 5 is <!DOCTYPE html>, that is it.  This identifies
 
 You might notice that in the JBoss Visual Page Editor, the visual portion is not that attractive, this is because the majority of jQuery Mobile magic happens at runtime and our visual page editor simply displays the HTML without embellishment.  
 
-For now, using the Eclipse internal browser, hit this url
-link: http://localhost:8080/jboss-javaee6-webapp/mobile.html
+For now, using the Eclipse internal browser, hit this url +  http://localhost:8080/jboss-javaee6-webapp/mobile.html
 
 Note: Normally HTML files are deployed automatically, if you find it missing, just use Full Publish or Run As Run on Server as demonstrated in previous steps.
 
@@ -594,7 +609,7 @@ As soon as the page loads, you will be prompted with an alert box with "Ready to
 
 [[jquery_mobile_template_image]]
 .jQuery Mobile Template
-image::gfx/introduction/jquery_mobile_template.png[]
+image::gfx/introduction/jquery_mobile_template.png[scaledwidth="70%"]
 
 One side benefit of using a HTML5 + jQuery-based front-end to your application is that it allows for fast turnaround in development.  Simply edit the HTML file, save the file and refresh your browser.  
 
@@ -607,72 +622,67 @@ Insert the following block of code directly below the alert()
         var listOfEvents = $("#listOfItems");
         listOfEvents.empty();
         $.each(events, function(index, event) {
-                console.log(event.name);
+                // console.log(event.name);
                 listOfEvents.append("<li><a href='#'>" + event.name + "</a>");
         });
         listOfEvents.listview("refresh");
 	});
 ----------------------------------------------------------------------------------------------------
 
-Some notes on this block of JavaScript code: 
-1) using $.getJSON("rest/events") to hit the EventService.java
-2) a commented out // console.log
-3) Getting a reference to listOfItems which is declared in the HTML using an id attribute
-4) Calling .empty on that list - removing the One, Two, Three items
-5) For each event - based on what is returned in step 1
-6) console.log
-7) append the found event to the UL in the HTML
-8) Refresh the listOfItems
+NOTE: The Asciidoc tool does not handle single quotes well, if you copy & paste you may need to change the ticks around # back into single quotes
+
+Some notes on this block of JavaScript code: +
+1) using $.getJSON("rest/events") to hit the EventService.java +
+2) a commented out // console.log, causes problems in IE +
+3) Getting a reference to listOfItems which is declared in the HTML using an id attribute +
+4) Calling .empty on that list - removing the One, Two, Three items +
+5) For each event - based on what is returned in step 1 +
+6) another commented out // console.log +
+7) append the found event to the UL in the HTML +
+8) Refresh the listOfItems +
+
+NOTE: You may find the .append("<li>...") syntax unattractive, embedding HTML inside of the JS .append method, this can be corrected using various JS templating techniques.
 
 The result is ready for the average mobile phone. Simply refresh your browser to see the results.
 
 [[jquery_mobile_results_image]]
 .jQuery Mobile REST Results
-image::gfx/introduction/jquery_mobile_results.png[]
+image::gfx/introduction/jquery_mobile_results.png[scaledwidth="70%"]
 
 JBoss Tools/JBoss Developer Studio have included another tool to help you better understand what your mobile application will look like – the BrowserSim.    Look for a "phone" icon in the Eclipse toolbar, it is there if you are in the JBoss Perspective.
 
 [[mobile_browsersim_in_toolbar_image]]
 .Mobile BrowserSim icon in Eclipse Toolbar
-image::gfx/introduction/mobile_browsersim_in_toolbar.png[]
+image::gfx/introduction/mobile_browsersim_in_toolbar.png[scaledwidth="80%"]
 
 Note: The BrowserSim feature takes advantage of a locally installed Safari (Mac & Windows) on your workstation.  It does not package a whole browser by itself.  You will need to install Safari on Windows to leverage this feature – but that is more economical than having to purchase a MacBook to quickly look at your mobile-web focused application.
 
 [[mobile_browsersim_image]]
 .Mobile BrowserSim
-image::gfx/introduction/mobile_browsersim.png[]
+image::gfx/introduction/mobile_browsersim.png[scaledwidth="30%"]
 
-The Mobile BrowserSim has a Devices menu, on Mac it is in the top menu bar and on Windows it is available via right-click.   This menu allows you to change user-agent and dimensions of the browser, plus change the orientation of the device.  
+The Mobile BrowserSim has a Devices menu, on Mac it is in the top menu bar and on Windows it is available via right-click as a pop-up menu.   This menu allows you to change user-agent and dimensions of the browser, plus change the orientation of the device.  
 
 [[mobile_browsersim_devices_menu_image]]
 .Mobile BrowserSim Devices Menu
-image::gfx/introduction/mobile_browsersim_devices_menu.png[]
+image::gfx/introduction/mobile_browsersim_devices_menu.png[scaledwidth="30%"]
 
 [[mobile_browsersim_windows_menu_image]]
 .Mobile BrowserSim on Windows 7
-image::gfx/introduction/mobile_browsersim_windows_menu.png[]
+image::gfx/introduction/mobile_browsersim_windows_menu.png[scaledwidth="30%"]
 
 You can also add your own custom device/browser types.
 
 [[mobile_browsersim_custom_devices_image]]
 .Mobile BrowserSim Custom Devices Window
-image::gfx/introduction/mobile_browsersim_custom_devices.png[]
+image::gfx/introduction/mobile_browsersim_custom_devices.png[scaledwidth="65%"]
 
-Under the File menu, you will find a View Page Source option that will open up the mobile-version of the website's source code inside of JBoss Developer Studio.  This is a very useful feature for learning how other company's are creating their mobile web presence. 
+Under the *File* menu, you will find a *View Page Source* option that will open up the mobile-version of the website's source code inside of JBoss Developer Studio.  This is a very useful feature for learning how other developers are creating their mobile web presence. 
 
 [[mobile_browsersim_bofa_source_image]]
 .Mobile BrowserSim View Source
-image::gfx/introduction/mobile_browsersim_bofa_source.png[]
+image::gfx/introduction/mobile_browsersim_bofa_source.png[scaledwidth="80%"]
 
 Conclusion
 ----------
-This concludes our introduction to building HTML5 Mobile Web applications using Java EE 6 and JBoss Developer Studio.
-
-
-
-
-
-
-
-
-
+This concludes our introduction to building HTML5 Mobile Web applications using Java EE 6 with Forge and JBoss Developer Studio.   At this point, you should feel confident enough to tackle any of the additional exercises to learn how the TicketMonster sample application is constructed.
