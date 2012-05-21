@@ -5,21 +5,23 @@ Purpose and Target Audience
 ---------------------------
 The target audience for this tutorial are those individuals who do not yet have a great deal of experience with Eclipse + JBoss Tools (JBoss Developer Studio), JBoss Enterprise Application 6 or JBoss AS 7, Java EE 6 features like JAX-RS or HTML5 & jQuery for building an mobile web front-end.  
 
-This tutorial sets the stage for the creation of TicketMonster - our sample application that illustrates how to bring together the best features of Java EE 6 + JBoss to create a rich, mobile-optimized and dynamic application - https://github.com/jboss/ticket-monster
+This tutorial sets the stage for the creation of TicketMonster - our sample application that illustrates how to bring together the best features of *Java EE 6 + HTML5 + JBoss* to create a rich, mobile-optimized and dynamic application +
+https://github.com/jboss/ticket-monster
 
-If you prefer to watch instead of read, a large portion of this content is also covered in video form at  http://docs.jboss.org/tools/movies/
+If you prefer to watch instead of read, a large portion of this content is also covered in video form at  +
+http://docs.jboss.org/tools/movies/
 
-In this tutorial, we will touch on the following:
-- Working with JBoss Developer Studio (Eclipse + JBoss Tools)
-- Creating of a Java EE 6 project via a Maven archetype
-- Leveraging m2e and m2e-wtp
-- Using Forge to create a JPA entity
-- Using Hibernate Tools
-- Database Schema Generation
-- Deployment to a local JBoss Server
-- Adding a JAX-RS endpoint
-- Adding a jQuery Mobile client
-- Using the Mobile BrowserSim
+In this tutorial, we will touch on the following: +
+- Working with JBoss Developer Studio (Eclipse + JBoss Tools) +
+- Creating of a Java EE 6 project via a Maven archetype +
+- Leveraging m2e and m2e-wtp +
+- Using Forge to create a JPA entity +
+- Using Hibernate Tools +
+- Database Schema Generation +
+- Deployment to a local JBoss Server +
+- Adding a JAX-RS endpoint +
+- Adding a jQuery Mobile client +
+- Using the Mobile BrowserSim +
 
 [[jbds5_mobile_browsersim_image]]
 .JBoss Developer Studio 5 with Mobile BrowserSim
@@ -31,7 +33,8 @@ Installation
 
 The first order of business is to get your development environment setup and JBoss Developer Studio v5 installed.  JBoss Developer Studio is Eclipse Indigo (3.7.2) for Java EE Developers plus select JBoss Tools and is available for free at http://www.jboss.org/developer.  You may also choose to install JBoss Tools 3.3 into your existing Eclipse Indigo for Java EE Developers.   This document uses screenshots depicting JBoss Developer Studio.
 
-You must have a Java Development Kit (JDK) installed, either v6 or v7 will work - while a JVM runtime will work for most use cases, for a developer environment it is normally best to have the full JDK.  System requirements for JBoss Developer Studio are listed in the online documentation. + http://docs.redhat.com/docs/en-US/JBoss_Developer_Studio/5.0.Beta/html/Getting_Started_Guide/minimumrequirements.html
+You must have a Java Development Kit (JDK) installed, either v6 or v7 will work - while a JVM runtime will work for most use cases, for a developer environment it is normally best to have the full JDK.  System requirements for JBoss Developer Studio are listed in the online documentation. +
+http://docs.redhat.com/docs/en-US/JBoss_Developer_Studio/5.0.Beta/html/Getting_Started_Guide/minimumrequirements.html
 
 JBoss Developer Studio installation and introduction +
 http://vimeo.com/39606090
@@ -39,8 +42,9 @@ http://vimeo.com/39606090
 JBoss Tools into Eclipse Indigo installation and introduction +
 http://vimeo.com/39743315
 
-The JBoss Developer Studio installer normally has a very long name such as
-"jbdevstudio-product-universal-5.0.0.v201204301418M-H119.jar" where the latter portion of the file name is related to build date and version information and the text near the front related to what target OS the installer is for.   The "universal" installer is for any operating system.  To launch the installer you may simply be able to double-click on the .jar file name or you may need to issue the following from the operating system command line:
+The JBoss Developer Studio installer normally has a very long name such as +
+"jbdevstudio-product-universal-5.0.0.v201204301418M-H119.jar" +
+where the latter portion of the file name is related to build date and version information and the text near the front related to what target OS the installer is for.   The "universal" installer is for any operating system.  To launch the installer you may simply be able to double-click on the .jar file name or you may need to issue the following from the operating system command line:
 *java -jar jbdevstudio-product-universal-5.0.0.v201204301418M-H119.jar*
 
 We recommend using the "universal" installer as it handles Windows, Mac OS X and Linux - 32-bit and 64-bit versions.
