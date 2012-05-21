@@ -239,6 +239,8 @@ The overall commands are as follows:
 	
 	field string --named name
 	
+	validation setup
+	
 	constraint NotNull --onProperty name
 	
 	constraint Size --onProperty name --min 5 --max 50 --message "Must be > 5 and < 50"
@@ -251,7 +253,7 @@ The overall commands are as follows:
 	
 	field string --named picture
 
-At the [jboss-jbossee6-webapp] model $ type in `en` and hit the tab key on your keyboard.  `entity` will fill in.   Hit tab again and `entity --named` will appear.  Type in `Event` and add a space, Forge can not anticipate the name of your new entity.  Hit tab again and `--package` will appear.  Now, hit tab 5 times to fill in `org.jboss.tools.examples`,  there are multiple entries underneath examples, so Forge will display those options.  Type in `m` and hit tab to select `model`.
+At the [jboss-jbossee6-webapp] model $ type in `en` and hit the tab key on your keyboard.  `entity` will fill in.   Hit tab again and `entity --named` will appear.  Type in `Event` and add a space, Forge can not anticipate the name of your new entity.  Hit tab again and select `--package`.  Now, hit tab 5 times to fill in `org.jboss.tools.examples`,  and since there are multiple entries underneath examples, Forge will display those options.  Type in `m` and hit tab to select `model`.
 
 Now hit the Enter/Return key to watch the command execute.  The Event entity will be generated into the "model" package and open up inside of Eclipse.
 
