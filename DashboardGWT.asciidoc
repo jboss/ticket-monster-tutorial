@@ -107,7 +107,6 @@ For enabling Errai in our application we will add an `ErraiApp.properties` marke
 We will also add an `ErraiService.properties` file, which contains basic configuration for the bus itself. Unlike ErraiApp.properties, there should be at most one ErraiService.properties file on the classpath of a deployed application. 
 
 .src/main/resources/ErraiService.properties
-[source,properties]
 ---------------------------------------------------------------------------------------------------------
 #
 # Request dispatcher implementation (default is SimpleDispatcher)
