@@ -1,8 +1,8 @@
-Building the business services 
+Building The Business Services 
 ==============================
 
-Learn how to design and implement the business layer of an application and how to make it usable by various front-ends
-----------------------------------------------------------------------------------------------------------------------
+What Will You Learn Here?
+-------------------------
 
 You've just defined the domain model of your application and created its persistence layer. Now you need to implement the services that implement the business logic of your application and expose them to the front-end. After reading this, you'll understand how to design the business layer and what choices to make while developing it. Topics covered include:
 
@@ -34,9 +34,12 @@ exposed externally by the RESTful service;
 .Where to draw the line?
 ******************************************************************************************
 A business service is an encapsulated, reusable logical component that groups together a 
-number of well-defined cohesive business operations. Business services perform business calculations, and may coordinate infrastructure services such as persistence units, or even other business services as well. The decision of drawing boundaries between them should take into account 
+number of well-defined cohesive business operations. Business services perform business calculations,
+and may coordinate infrastructure services such as persistence units, or even other business services 
+as well. The decision of drawing boundaries between them should take into account 
 whether the newly created service really represent standalone, potentially reusable components.
 ******************************************************************************************
+
 
 As you can see, some of the services are intended to be consumed within the business layer
 of the application, while others are exposing parts of the application as JAX-RS RESTful 
@@ -69,10 +72,10 @@ application.
 .Contexts and Dependency Injection (CDI)
 ******************************************************************************************
 As it's name suggests, CDI is the contexts and dependency injection standard for Java EE.
-It's goal is to bring the various parts of the application together, by defining a set of
+Its goal is to bring the various parts of the application together, by defining a set of
 component management and injection services for Java EE applications. By enabling CDI in 
-your application, your deployment classes become managed components the lifecycle and assembly
-of whom becomes the responsibility of the Java EE server. 
+your application, your deployment classes become managed components and their lifecycle 
+and wiring becomes the responsibility of the Java EE server. 
 
 Reducing coupling is a critical goal for a truly decoupled architecture. You can focus now on implementing the specific responsibilities of each component and  describing their dependencies in a declarative fashion, and the runtime will do the rest for you: instantiating, destroying them and wiring them toghether!
 ******************************************************************************************

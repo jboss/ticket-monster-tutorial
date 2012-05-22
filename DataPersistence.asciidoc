@@ -1,8 +1,8 @@
 Building The Persistence Layer
 ==============================
 
-Learn how to build the persistence layer for an application, and how to test it
--------------------------------------------------------------------------------
+What Will You Learn Here?
+-------------------------
 
 You have set up your project successfully. Now it is time to begin working on the TicketMonster application, and the first step is adding the persistence layer. After reading this guide, you'll understand what design and implementation choices to make. Topics covered include:
 

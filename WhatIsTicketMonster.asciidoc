@@ -5,12 +5,12 @@ Ticket Monster is a moderately complex application that demonstrates how to buil
 
 Apart from being a demo, Ticket Monster provides an already existing application structure that you can grab and use for trying out your use cases, testing your own ideas, or, if you so wish, contribute back to the community with extensions.
 
-Use cases
+Use Cases
 ---------
 
 We have grouped the current use cases in two major categories: end user oriented and administrative. 
 
-What can end users do?
+What Can End Users do?
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The end users of the application want to attend some cool events. They will, in principal, try to find shows and create or cancel their bookings. So their use cases are:
@@ -27,7 +27,7 @@ The end users of the application want to attend some cool events. They will, in 
 image::gfx/ticket-monster-user-use-cases.png[]
 
 
-What can administrators do?
+What Can Administrators Do?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Administrators are more concerned the operation of the site. The will manage the so-called "master data": information about venues, events and shows, and want to see how many tickets have been sold. Their use cases are:
@@ -56,8 +56,13 @@ The major part of the administration site is centered around CRUD use cases, so 
 
 Monitoring sales requires staying in touch with the latest changes on the server side, so this part of the application will be developed in GWT and showcases Errai's support for real-time updates via client-server CDI eventing.
 
-Learn more about it
+How Can You Run It?
 -------------------
+
+TODO
+
+Learn More About Ticket Monster
+-------------------------------
 
 The example is accompanied by a series of tutorials that will walk you through the process of creating the TicketMonster application from end to end.
 

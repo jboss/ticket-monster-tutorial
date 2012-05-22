@@ -1,8 +1,8 @@
 Building the User UI using HTML5
 ================================
 
-Learn how to build the user interface in desktop and mobile version
--------------------------------------------------------------------
+What Will You Learn Here?
+-------------------------
 
 You've just implemented the business services of your application, and exposed them through RESTful endpoints. Now you need to implement a flexible user interface that can be easily used with both desktop and mobile clients. After reading this tutorial, you will understand our front-end design and the choices that we made in its implementation. Topics covered include:
 
@@ -22,8 +22,8 @@ In this tutorial, we will build a single-page application. All the necessary cod
 .Single page application
 image::gfx/single-page-app.png[]
 
-MVC support
-~~~~~~~~~~~
+Client-side MVC Support
+~~~~~~~~~~~~~~~~~~~~~~~
 
 Because this is a moderately complex example, which involves multiple views and different types of data, you will use a client-side MVC framework to structure your application, which provides amongst others:
 
