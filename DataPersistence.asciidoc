@@ -15,12 +15,7 @@ We'll round out the guide by revealing the required, yet short and sweet, config
 
 The tutorial will show you how to perform all these steps in JBoss Developer Studio, including screenshots that guide you through. For those of you who prefer to watch and learn, the included video shows you how we performed all the steps.
 
-TicketMonster contains 14 entities, of varying complexity. In this tutorial we'll classify the entities, and walk through desiging and creating one of each group.
-
-Database Schema
----------------
-
-TODO
+TicketMonster contains 14 entities, of varying complexity. In this tutorial we'll classify the entities, and walk through designing and creating one of each group.
 
 [[YourFirstEntity]]
 Your first entity
@@ -70,29 +65,29 @@ public class TicketCategory {
 }
 -------------------------------------------------------------------------------------------------------
 
-We're going to want to keep the ticket category in collections (for example, to present it as part of drop down in the UI), so it's important that we properly implement `equals()` and `hashCode()`.  At this point, we need to define a property (or group of properties) that uniquely identifies the ticket category. We refer to these properties as the "entities natural identity".
+We're going to want to keep the ticket category in collections (for example, to present it as part of drop down in the UI), so it's important that we properly implement `equals()` and `hashCode()`.  At this point, we need to define a property (or group of properties) that uniquely identifies the ticket category. We refer to these properties as the "entity's natural identity".
 
-.Defining an entities natural identity
+.Defining an entity's natural identity
 *************************************************************************************
 Using an ORM introduces additional constraints on object identity. Defining the 
-properties that make up an entities natural identity can be tricky, but is very 
-important. Using the object identity, or the synthetic identity (database generated 
+properties that make up an entity's natural identity can be tricky, but is very 
+important. Using the object's identity, or the synthetic identity (database generated 
 primary key) identity can introduce unexpected bugs into your application, so you 
 should always ensure you use a natural identity. You can read more about the issue at
-link: https://community.jboss.org/wiki/EqualsAndHashCode.
+https://community.jboss.org/wiki/EqualsAndHashCode.
 *************************************************************************************
 
 For ticket category, the choice of natural identity is easy and obvious - it must be the one property, _description_ that the entity has! Having identified the natural identity, adding an `equals()` and `hashCode()` method is easy. In Eclipse, choose _Source -> Generate hashCode() and equals()..._
 
 [[eclipse-generate-hashcode-equals]]
 .Generate hashCode() and equals() in Eclipse
-image::gfx/eclipse-generate-hashcode-equals.png[]
+image::gfx/eclipse-generate-hashcode-equals.png[scaledwidth="50%"]
 
 Now, select the properties to include:
 
 [[eclipse-generate-hashcode-equals-2]]
 .Generate hashCode() and equals() in Eclipse
-image::gfx/eclipse-generate-hashcode-equals-2.png[]
+image::gfx/eclipse-generate-hashcode-equals-2.png[scaledwidth="50%"]
 
 Now that we have a JavaBean, let's proceed to make it an entity. First, add the `@Entity` annotation to the class:
 
@@ -174,19 +169,19 @@ It's very important that any data you place in the database is of the highest qu
 
 .What is Bean Validation?
 *************************************************************************************
-Bean Validation is a Java specification which:
+Bean Validation (JSR 303) is a Java EE specification which:
 
 * provides a unified way of declaring and defining constraints on an object model.
 * defines a runtime engine to validate objects
 
 Bean Validation includes integration with other Java EE specifications, such as JPA.
-Bean Validation constrains are automatically applied before data is persisted to the
+Bean Validation constraints are automatically applied before data is persisted to the
 database, as a last line of defence against bad data.
 *************************************************************************************
 
 The _description_ of the ticket category should not be empty for two reasons. Firstly, an empty ticket category description is no use to a person trying to book a ticket - it doesn't convey any information. Secondly, as the description forms the natural identity, we need to make sure the property is always populated.
 
-Let's add the Bean Validation constrain `@NotEmpty`:
+Let's add the Bean Validation constraint `@NotEmpty`:
 
 .src/main/java/org/jboss/jdf/example/ticketmonster/model/TicketCategory.java
 [source,java]
@@ -208,7 +203,7 @@ public class TicketCategory {
      * </p>
      * 
      * <p>
-     * The description must not be null and must be one or more characters, the Bean Validation constrain <code>@NotEmpty</code>
+     * The description must not be null and must be one or more characters, the Bean Validation constraint <code>@NotEmpty</code>
      * enforces this.
      * </p>
      * 
@@ -231,8 +226,6 @@ And that is our first entity! Here is the complete entity:
  * A lookup table containing the various ticket categories. E.g. Adult, Child, Pensioner, etc.
  * </p>
  * 
- * @author Shane Bryzak
- * @author Pete Muir
  */
 @Entity
 public class TicketCategory {
@@ -256,7 +249,7 @@ public class TicketCategory {
      * </p>
      * 
      * <p>
-     * The description must not be null and must be one or more characters, the Bean Validation constrain <code>@NotEmpty</code>
+     * The description must not be null and must be one or more characters, the Bean Validation constraint <code>@NotEmpty</code>
      * enforces this.
      * </p>
      * 
@@ -332,14 +325,14 @@ Finally, both events and venues can have "media items", such as images or videos
 
 [[database-design]]
 .Entity-Relationship Diagram
-image::gfx/database-design.png[]
+image::gfx/database-design.png[scaledwidth="70%"]
 
 Media Items
 ~~~~~~~~~~~
 
 Storing large binary objects, such as images or videos in the database isn't advisable (as it can lead to performance issues), and playback of videos can also be tricky, as it depends on browser capabilities. For TicketMonster, we decided to make use of existing services to host images and videos, such as YouTube or Flickr. All we store in the database is the URL the application should use to access the media item, and the type of the media item (note that the URL forms a media items natural identifier). We need to know the type of the media item in order to render the media correctly in the view layer.
 
-In order for a view layer to correctly render the media item (e.g. display an image, embed a media player), it's likely that special code has had to have been added. For this reason we represents the types of media that TicketMonster understands as a closed set, unmodifiable at runtime. An enum is perfect for this!
+In order for a view layer to correctly render the media item (e.g. display an image, embed a media player), it's likely that special code has had to have been added. For this reason we represent the types of media that TicketMonster understands as a closed set, unmodifiable at runtime. An enum is perfect for this!
 
 Luckily, JPA has native support for enums, all we need to do is add the `@Enumerated` annotation:
 
@@ -845,7 +838,7 @@ public class Show {
 }
 -------------------------------------------------------------------------------------------------------
 
-If you've been paying attention, you'll notice that there is a problem here. We've identified that the natural identity of this entity is formed of two properties - the _event_ and the _venue_, and we've correctly coded the `equals()` and `hashCode()` methiods (or had generate them for us!). However, we haven't told JPA that these two properties, in combination, must be unique. As there are two properties involved, we can no longer use the `@Column` annotation (which operates on a single property/table column), but now must use the class level `@Table` annotation (which operates on the whole entity/table). Change the class definition to read:
+If you've been paying attention, you'll notice that there is a problem here. We've identified that the natural identity of this entity is formed of two properties - the _event_ and the _venue_, and we've correctly coded the `equals()` and `hashCode()` methods (or had them generated for us!). However, we haven't told JPA that these two properties, in combination, must be unique. As there are two properties involved, we can no longer use the `@Column` annotation (which operates on a single property/table column), but now must use the class level `@Table` annotation (which operates on the whole entity/table). Change the class definition to read:
 
 .src/main/java/org/jboss/jdf/example/ticketmonster/model/Show.java
 [source,java]
@@ -1201,9 +1194,9 @@ public class Performance {
 
 Of interest here is the storage of the date and time. 
 
-A Java `Date` represents "a specific instance in time, with millisecond precision" and is the recommended construct for representing date and time in the JDK. A RDBMS's _DATE_ type typically has day precision only, and uses the _DATETIME_ or _TIMESTAMP_ types to represent an instance in time, and often only to second precision. The 
+A Java `Date` represents "a specific instance in time, with millisecond precision" and is the recommended construct for representing date and time in the JDK. A RDBMS's _DATE_ type typically has day precision only, and uses the _DATETIME_ or _TIMESTAMP_ types to represent an instance in time, and often only to second precision.
 
-As the mapping between Java date and time, and database date daten and time isn't straightforward, JPA requires us to use the `@Temporal` annotation on any property of type `Date`, and to specify whether the `Date` should be stored as a date, a time or a timestamp (date and time).
+As the mapping between Java date and time, and database date and time isn't straightforward, JPA requires us to use the `@Temporal` annotation on any property of type `Date`, and to specify whether the `Date` should be stored as a date, a time or a timestamp (date and time).
 
 Venue
 ~~~~~
@@ -1382,7 +1375,7 @@ public class Venue {
 
 In creating this entity, we've followed all the design and implementation decisions previously discussed, with one new concept. Rather than add the properties for street, city, postal code etc. to this object, we've extracted them into the `Address` object, and included it in the `Venue` object using composition. This would allow us to reuse the Address object in other places (such as a customer's address).
 
-A RDBMS doesn't have a similar concept to composition, so we need to choose whether to represent the address as a separate entity, and create a relationship between the venue and the address, or whether to map the properties from `Address` to the table for the owning entity, in this case `Venue`. It doesn't make much sense for an address to be a full entity - we're not going to want to run queries against the address in isolation, nor do we want to be able to delete or update an address in solation - in essence, the address doesn't have a standalone identity outside of the object into which it is composed.
+A RDBMS doesn't have a similar concept to composition, so we need to choose whether to represent the address as a separate entity, and create a relationship between the venue and the address, or whether to map the properties from `Address` to the table for the owning entity, in this case `Venue`. It doesn't make much sense for an address to be a full entity - we're not going to want to run queries against the address in isolation, nor do we want to be able to delete or update an address in isolation - in essence, the address doesn't have a standalone identity outside of the object into which it is composed.
 
 To _embed_ the `Address` into `Venue` we add the `@Embeddable` annotation to the `Address` class. However, unlike a full entity, there is no need to add an identifier. Here's the source for `Address`:
 
@@ -1400,8 +1393,6 @@ To _embed_ the `Address` into `Venue` we add the `@Embeddable` annotation to the
  * entity. An embeddable entity appears as a child in the object model, but no relationship is established in the RDBMS..
  * </p>
  * 
- * @author Marius Bogoevici
- * @author Pete Muir
  */
 @Embeddable
 public class Address {
@@ -1481,7 +1472,7 @@ A venue consists of a number of seating sections. Each seating section has a nam
 Booking, Ticket & Seat
 ~~~~~~~~~~~~~~~~~~~~~~
 
-There aren't many new concepts to explore in the TicketMonster data model, so if you are following along with the tutorial, you should copy in the `Booking`, `Ticket` and `Seat` classes.
+There aren't many new concepts to explore in `Booking`, `Ticket` and `Seat`, so if you are following along with the tutorial, you should copy in the `Booking`, `Ticket` and `Seat` classes.
 
 Once the user has selected an event, identified the venue, and selected a performance, they have the opportunity to request a number of seats in a given section, and select the category of tickets required. Once they chosen their seats, and entered their email address, a `Booking` is created.
 
@@ -1546,7 +1537,9 @@ In this example, we are using the in-memory H2 database, which is very easy to s
 </datasources>
 -------------------------------------------------------------------------------------------------------
 
-The datasource configures an H2 in-memory database, called _ticket-monster_, and registeres a datasource in JNDI at `java:jboss/datasources/TicketMonsterDS`.
+The datasource configures an H2 in-memory database, called _ticket-monster_, and registeres a datasource in JNDI at the address:
+
+    java:jboss/datasources/TicketMonsterDS
 
 Now we need to configure JPA to use the datasource. This is done in `src/main/resources/META-INF/persistence.xml`:
 
@@ -1580,6 +1573,11 @@ Hibernate includes the ability to generate tables from entities, which here we h
 Populating Test Data
 --------------------
 
-Whilst we develop our application, it's useful to be able to populate the database with test data. Luckily, Hibernate makes this easy. Just add a file called `import.sql` onto the classpath of your application (we keep it in `src/main/resources/import.sql`. In it, we just write standard sql statements suitable for the database we are using. To do this, you need to know the generated column and table names for your entities. The best way to work these out is to look at the h2console.
+Whilst we develop our application, it's useful to be able to populate the database with test data. Luckily, Hibernate makes this easy. Just add a file called `import.sql` onto the classpath of your application (we keep it in `src/main/resources/import.sql`). In it, we just write standard sql statements suitable for the database we are using. To do this, you need to know the generated column and table names for your entities. The best way to work these out is to look at the h2console.
 
-The h2console is included in the JBoss AS quickstarts, along with instructions on how to use it. The JDF site contains more information on the JBoss AS Quickstarts.
+The h2console is included in the JBoss AS quickstarts, along with instructions on how to use it. For more information, see http://jboss.org/jdf/quickstarts/jboss-as-quickstart/h2-console/
+
+Conclusion
+----------
+
+You now have a working data model for your TicketMonster application, our next tutorial will show you how to create the business services layer or something like that - it seems to end abruptly.
