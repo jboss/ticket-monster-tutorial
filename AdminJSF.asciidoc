@@ -1,5 +1,6 @@
 Adding a Administration User Interface using JSF and Forge
 ==========================================================
+Author: Pete Muir 
 
 What Will You Learn Here?
 -------------------------

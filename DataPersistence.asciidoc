@@ -1,5 +1,6 @@
 Building The Persistence Layer
 ==============================
+Author: Pete Muir
 
 What Will You Learn Here?
 -------------------------

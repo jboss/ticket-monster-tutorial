@@ -1,5 +1,6 @@
 Building the User UI using HTML5
 ================================
+Author: Marius Bogoevici
 
 What Will You Learn Here?
 -------------------------

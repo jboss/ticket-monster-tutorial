@@ -1,5 +1,6 @@
 Building A Statistics Dashboard Using GWT And Errai
 ===================================================
+Author: Marius Bogoevici
 
 What will you learn now?
 ------------------------
