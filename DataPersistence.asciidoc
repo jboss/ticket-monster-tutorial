@@ -24,12 +24,13 @@ Your first entity
 
 The simplest kind of entities are often those representing lookup tables. `TicketCategory` is a classic lookup table that defines the ticket types available (e.g. Adult, Child, Pensioner). A ticket category has one property - _description_.
 
+[NOTE]
 .What's in a name?
-*************************************************************************************
+=====================================================================================
 Using a consistent naming scheme for your entities can help another developer get up
 to speed with your code base. We've named all our lookup tables XXXCategory to allow
 us to easily spot them.
-*************************************************************************************
+=====================================================================================
 
 
 Let's start by creating a JavaBean to represent the ticket category:
@@ -68,15 +69,16 @@ public class TicketCategory {
 
 We're going to want to keep the ticket category in collections (for example, to present it as part of drop down in the UI), so it's important that we properly implement `equals()` and `hashCode()`.  At this point, we need to define a property (or group of properties) that uniquely identifies the ticket category. We refer to these properties as the "entity's natural identity".
 
+[NOTE]
 .Defining an entity's natural identity
-*************************************************************************************
+=====================================================================================
 Using an ORM introduces additional constraints on object identity. Defining the 
 properties that make up an entity's natural identity can be tricky, but is very 
 important. Using the object's identity, or the synthetic identity (database generated 
 primary key) identity can introduce unexpected bugs into your application, so you 
 should always ensure you use a natural identity. You can read more about the issue at
 https://community.jboss.org/wiki/EqualsAndHashCode.
-*************************************************************************************
+=====================================================================================
 
 For ticket category, the choice of natural identity is easy and obvious - it must be the one property, _description_ that the entity has! Having identified the natural identity, adding an `equals()` and `hashCode()` method is easy. In Eclipse, choose _Source -> Generate hashCode() and equals()..._
 
@@ -168,8 +170,9 @@ public class TicketCategory {
 
 It's very important that any data you place in the database is of the highest quality - this data is probably one of your organisations most valuable assets! To ensure that bad data doesn't get saved to the database by mistake, we'll use Bean Validation to enforce constraints on our properties.
 
+[NOTE]
 .What is Bean Validation?
-*************************************************************************************
+=====================================================================================
 Bean Validation (JSR 303) is a Java EE specification which:
 
 * provides a unified way of declaring and defining constraints on an object model.
@@ -178,7 +181,7 @@ Bean Validation (JSR 303) is a Java EE specification which:
 Bean Validation includes integration with other Java EE specifications, such as JPA.
 Bean Validation constraints are automatically applied before data is persisted to the
 database, as a last line of defence against bad data.
-*************************************************************************************
+=====================================================================================
 
 The _description_ of the ticket category should not be empty for two reasons. Firstly, an empty ticket category description is no use to a person trying to book a ticket - it doesn't convey any information. Secondly, as the description forms the natural identity, we need to make sure the property is always populated.
 
@@ -362,13 +365,14 @@ Luckily, JPA has native support for enums, all we need to do is add the `@Enumer
     ...
 -------------------------------------------------------------------------------------------------------
 
+[NOTE]
 .@Enumerated(STRING) or @Enumerated(ORDINAL)?
-*************************************************************************************
+=====================================================================================
 JPA can store an enum value using it's ordinal (position in the list of declared enums)
 or it's STRING (the name it is given). If you choose to store an ordinal, you musn't alter
 the order of the list. If you choose to store the name, you musn't change the enum name.
 The choice is yours!
-*************************************************************************************
+=====================================================================================
 
 The rest of `MediaItem` shouldn't present a challenge to you. If you are building the application whilst following this tutorial, copy both `MediaItem` and `MediaType` from the TicketMonster project.
 
@@ -497,8 +501,9 @@ public class Event {
 
 First, let's add a media item to `Event`. As multiple events (or venues) could share the same media item, we'll model the relationship as _many-to-one_ - many events can reference the same media item.
 
+[NOTE]
 .Relationships supported by JPA
-*************************************************************************************
+=====================================================================================
 JPA can model four types of relationship between entities - one-to-one, one-to-many,
 many-to-one and many-to-many. A relationship may be bi-directional (both sides of the
 relationship know about each other) or uni-directional (only one side knows about the
@@ -507,7 +512,7 @@ relationship).
 Many database models are hierarchical (parent-child), as is TicketMonster's. As a result, 
 you'll probably find you mostly use one-to-many and many-to-one relationships, which
 allow building parent-child models.
-*************************************************************************************
+=====================================================================================
 
 Creating a many-to-one relationship is very easy in JPA. Just add the `@ManyToOne` annotation to the field. JPA will take care of the rest. Here's the property for `Event`:
 
