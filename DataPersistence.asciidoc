@@ -24,7 +24,7 @@ Your first entity
 
 The simplest kind of entities are often those representing lookup tables. `TicketCategory` is a classic lookup table that defines the ticket types available (e.g. Adult, Child, Pensioner). A ticket category has one property - _description_.
 
-[NOTE]
+[TIP]
 .What's in a name?
 =====================================================================================
 Using a consistent naming scheme for your entities can help another developer get up
@@ -69,7 +69,7 @@ public class TicketCategory {
 
 We're going to want to keep the ticket category in collections (for example, to present it as part of drop down in the UI), so it's important that we properly implement `equals()` and `hashCode()`.  At this point, we need to define a property (or group of properties) that uniquely identifies the ticket category. We refer to these properties as the "entity's natural identity".
 
-[NOTE]
+[TIP]
 .Defining an entity's natural identity
 =====================================================================================
 Using an ORM introduces additional constraints on object identity. Defining the 
@@ -365,7 +365,7 @@ Luckily, JPA has native support for enums, all we need to do is add the `@Enumer
     ...
 -------------------------------------------------------------------------------------------------------
 
-[NOTE]
+[TIP]
 .@Enumerated(STRING) or @Enumerated(ORDINAL)?
 =====================================================================================
 JPA can store an enum value using it's ordinal (position in the list of declared enums)
@@ -501,7 +501,7 @@ public class Event {
 
 First, let's add a media item to `Event`. As multiple events (or venues) could share the same media item, we'll model the relationship as _many-to-one_ - many events can reference the same media item.
 
-[NOTE]
+[TIP]
 .Relationships supported by JPA
 =====================================================================================
 JPA can model four types of relationship between entities - one-to-one, one-to-many,
