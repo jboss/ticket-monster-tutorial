@@ -1,6 +1,6 @@
 Building The Business Services 
 ==============================
-Author: Marius Bogoevici
+Marius Bogoevici
 
 What Will You Learn Here?
 -------------------------

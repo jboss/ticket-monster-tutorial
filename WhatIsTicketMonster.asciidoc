@@ -1,6 +1,6 @@
 What is TicketMonster?
 ======================
-Author: Marius Bogoevici
+Marius Bogoevici
 
 Ticket Monster is a moderately complex application that demonstrates how to build modern applications using JBoss web technologies. You can try using it, download it, fork it on GitHub and learn more about it from the accompanying tutorial.
 

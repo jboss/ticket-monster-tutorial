@@ -1,6 +1,6 @@
 Introduction & Getting Started
 ==============================
-Author: Burr Sutter
+Burr Sutter
 
 Purpose and Target Audience
 ---------------------------
