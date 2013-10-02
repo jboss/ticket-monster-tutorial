@@ -1,6 +1,6 @@
 Introduction & Getting Started
 ==============================
-Burr Sutter
+Burr Sutter & Ray Ploski
 
 Purpose and Target Audience
 ---------------------------
@@ -24,18 +24,18 @@ In this tutorial, we will touch on the following: +
 - Adding a jQuery Mobile client +
 - Using the Mobile BrowserSim +
 
-[[jbds5_mobile_browsersim_image]]
-.JBoss Developer Studio 5 with Mobile BrowserSim
-image::gfx/introduction/jbds5_mobile_browsersim.png[scaledwidth="90%"]
+[[jbds7_mobile_browsersim_image]]
+.JBoss Developer Studio with Mobile BrowserSim
+image::gfx/introduction/jbds7-screenshot-browsersim.png[scaledwidth="90%"]
 
 
 Installation
 ------------
 
-The first order of business is to get your development environment setup and JBoss Developer Studio v5 installed.  JBoss Developer Studio is Eclipse Indigo (3.7.2) for Java EE Developers plus select JBoss Tools and is available for free at http://www.jboss.org/developer.  You may also choose to install JBoss Tools 3.3 into your existing Eclipse Indigo for Java EE Developers.   This document uses screenshots depicting JBoss Developer Studio.
+The first order of business is to get your development environment setup and JBoss Developer Studio v7 installed.  JBoss Developer Studio is Eclipse Kepler (4.3) for Java EE Developers plus select JBoss Tools and is available for free at http://www.jboss.org/developer.  You may also choose to install JBoss Tools 4.1 into your existing Eclipse Kepler for Java EE Developers.   This document uses screenshots depicting JBoss Developer Studio.
 
 You must have a Java Development Kit (JDK) installed, either v6 or v7 will work - while a JVM runtime will work for most use cases, for a developer environment it is normally best to have the full JDK.  System requirements for JBoss Developer Studio are listed in the online documentation. +
-http://docs.redhat.com/docs/en-US/JBoss_Developer_Studio/5.0.Beta/html/Getting_Started_Guide/minimumrequirements.html
+https://access.redhat.com/site/documentation/en-US/JBoss_Developer_Studio/7.0/html/Getting_Started_Guide/chap-Install_JBoss_Developer_Studio.html
 
 JBoss Developer Studio installation and introduction +
 http://vimeo.com/39606090
@@ -44,11 +44,10 @@ JBoss Tools into Eclipse Indigo installation and introduction +
 http://vimeo.com/39743315
 
 The JBoss Developer Studio installer normally has a very long name such as +
-"jbdevstudio-product-universal-5.0.0.v201204301418M-H119.jar" +
-where the latter portion of the file name is related to build date and version information and the text near the front related to what target OS the installer is for.   The "universal" installer is for any operating system.  To launch the installer you may simply be able to double-click on the .jar file name or you may need to issue the following from the operating system command line:
-*java -jar jbdevstudio-product-universal-5.0.0.v201204301418M-H119.jar*
+"jbdevstudio-product-universal-7.0.0.GA-v20130720-0044-B364"
+The "universal" installer is for any operating system.  To launch the installer you may simply be able to double-click on the .jar file name or you may need to issue the following from the operating system command line:
+*java -jar jbdevstudio-product-universal-7.0.0.GA-v20130720-0044-B364*
 
-We recommend using the "universal" installer as it handles Windows, Mac OS X and Linux - 32-bit and 64-bit versions.
 
 Note: Even if you are installing on a 64-bit OS, you may still wish to use the 32-bit JVM for the JBoss Developer Studio (or Eclipse + JBoss Tools).   The 32-bit version allows you access to the Visual Page Editor - a split-pane editor that gives you a glimpse of what your HTML/XHTML (JSF, JSP, etc) will look like.  Also, the 32-bit version uses less memory than the 64-bit version.  You may still run your application servers in 64-bit JVMs if needed to insure compatibility with the production environment while keeping your IDE in 32-bit mode.
 
